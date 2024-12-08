@@ -27,7 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
                             placeholder="Search Markets"
                         />
                         <span className="absolute right-3 top-[25%] rounded-xl bg-[#1f1f1f] cursor-pointer">
-                            <FaSearch className="text-gray-200 text-xl" />
+                            <FaSearch className="text-gray-200 text-lg" />
                         </span>
                     </p>
                     <button className="bg-transparent flex items-center space-x-3 rounded-full outline-none appearance-none border border-white text-white py-1 px-6">
