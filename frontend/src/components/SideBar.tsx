@@ -5,6 +5,9 @@ import {
     FaChartBar,
     FaTimes,
     FaPlus,
+    FaMedal,
+    FaQuestionCircle,
+    FaInfoCircle,
 } from "react-icons/fa";
 import { FaTableCells } from "react-icons/fa6";
 
@@ -24,9 +27,15 @@ type SidebarProps = {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const menuItems: MenuItem[] = [
         { icon: <FaHome />, label: "Dashboard", path: "/" },
-        { icon: <FaTableCells />, label: "Markets", path: "/profile" },
-        { icon: <FaChartBar />, label: "My Bets", path: "/dashboard" },
-        { icon: <FaPlus />, label: "Create", path: "/settings" },
+        { icon: <FaTableCells />, label: "Markets", path: "/" },
+        { icon: <FaChartBar />, label: "My Bets", path: "/" },
+        { icon: <FaPlus />, label: "Create", path: "/" },
+    ];
+    
+    const menuItems2: MenuItem[] = [
+        { icon: <FaQuestionCircle />, label: "FAQs", path: "/" },
+        { icon: <FaInfoCircle />, label: "Support", path: "/" },
+        { icon: <FaMedal />, label: "Rewards", path: "/" },
     ];
 
     return (
@@ -61,9 +70,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     />
                 </div>
 
-                <nav className="px-4 py-6">
+                <nav className="px-4 py-6 flex flex-col space-y-10">
                     <ul className="space-y-2">
                         {menuItems.map((item) => (
+                            <li key={item.label}>
+                                <a
+                                    href={item.path}
+                                    className="flex items-center p-2 hover:bg-gray-100 hover:text-gray-900 rounded transition"
+                                >
+                                    <span className="mr-5">{item.icon}</span>
+                                    {item.label}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                    <ul className="space-y-2">
+                        {menuItems2.map((item) => (
                             <li key={item.label}>
                                 <a
                                     href={item.path}
