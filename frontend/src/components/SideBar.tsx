@@ -1,6 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FaHome, FaUser, FaCog, FaChartBar, FaTimes } from "react-icons/fa";
+import {
+    FaHome,
+    FaChartBar,
+    FaTimes,
+    FaPlus,
+} from "react-icons/fa";
+import { FaTableCells } from "react-icons/fa6";
 
 // Define the type for menu items
 type MenuItem = {
@@ -17,10 +23,10 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const menuItems: MenuItem[] = [
-        { icon: <FaHome />, label: "Home", path: "/" },
-        { icon: <FaUser />, label: "Profile", path: "/profile" },
-        { icon: <FaChartBar />, label: "Dashboard", path: "/dashboard" },
-        { icon: <FaCog />, label: "Settings", path: "/settings" },
+        { icon: <FaHome />, label: "Dashboard", path: "/" },
+        { icon: <FaTableCells />, label: "Markets", path: "/profile" },
+        { icon: <FaChartBar />, label: "My Bets", path: "/dashboard" },
+        { icon: <FaPlus />, label: "Create", path: "/settings" },
     ];
 
     return (
@@ -39,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             {/* Sidebar */}
             <motion.div
                 className={`
-          fixed top-0 left-0 h-full w-64 bg-white 
+          fixed top-0 left-0 h-full w-72 bg-[#0d0d0d] text-white
           shadow-lg z-50 transform transition-transform duration-300
           md:translate-x-0 
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -48,21 +54,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 animate={{ x: isOpen ? 0 : "-100%" }}
                 transition={{ type: "tween" }}
             >
-                <div className="p-4 border-b flex justify-between items-center">
-                    <button className="" onClick={onClose}>
-                        <FaTimes className="text-2xl" />
-                    </button>
+                <div className="px-4 py-6 flex justify-between items-center">
+                    <FaTimes
+                        className="text-2xl text-white cursor-pointer transition-all duration-300 hover:text-gray-300"
+                        onClick={onClose}
+                    />
                 </div>
 
-                <nav className="p-4">
+                <nav className="px-4 py-6">
                     <ul className="space-y-2">
                         {menuItems.map((item) => (
                             <li key={item.label}>
                                 <a
                                     href={item.path}
-                                    className="flex items-center p-2 hover:bg-gray-100 rounded transition"
+                                    className="flex items-center p-2 hover:bg-gray-100 hover:text-gray-900 rounded transition"
                                 >
-                                    <span className="mr-3">{item.icon}</span>
+                                    <span className="mr-5">{item.icon}</span>
                                     {item.label}
                                 </a>
                             </li>
