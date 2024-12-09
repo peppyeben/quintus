@@ -28,6 +28,7 @@ const descriptions = [
     "Predicting the next big move",
     "What's the future looking like?",
     "Market-changing event incoming",
+    " Lorem, ipsum dolor sit amet consectetur adipisicing elit. Maiores officiis reiciendis rerum, distinctio reprehenderit asperiores repudiandae omnis accusantium illum id optio nihil earum cum sed quasi a cumque vel architecto.",
 ];
 
 export const generateRandomBets = (count: number = 3): BetProps[] => {

@@ -1,0 +1,7 @@
+@font-face {
+    font-display: swap; /* Ensures text is visible while font loads */
+    font-family: "Satoshi"; /* Name of the font */
+    font-style: normal; /* Font style (normal, italic, etc.) */
+    font-weight: 400; /* Font weight */
+    src: url("./Satoshi-Regular.otf") format("opentype"); /* Correct format for OpenType fonts */
+}
