@@ -15,9 +15,9 @@ export const FeaturedCard: React.FC<BetProps> = ({
     title,
     description,
     image,
-    totalPool,
-    category,
-    outcomes,
+    // totalPool,
+    // category,
+    // outcomes,
 }) => {
     return (
         <div className="flex justify-center items-start rounded-xl p-3 max-w-[28rem] w-full h-[15rem] bg-[#0d0d0d] space-x-1 relative">
