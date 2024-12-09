@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import tailwindScrollbar from "tailwind-scrollbar"; // Import the plugin using import syntax
+
 export default {
     content: [
         "./index.html",
@@ -8,5 +10,5 @@ export default {
     theme: {
         extend: {},
     },
-    plugins: [require("tailwind-scrollbar")],
+    plugins: [tailwindScrollbar], // Use the imported plugin
 };
