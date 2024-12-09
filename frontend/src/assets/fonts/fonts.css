@@ -1,7 +1,31 @@
 @font-face {
-    font-display: swap; /* Ensures text is visible while font loads */
-    font-family: "Satoshi"; /* Name of the font */
-    font-style: normal; /* Font style (normal, italic, etc.) */
-    font-weight: 400; /* Font weight */
-    src: url("./Satoshi-Regular.otf") format("opentype"); /* Correct format for OpenType fonts */
+    font-display: swap;
+    font-family: "Satoshi";
+    font-style: normal;
+    font-weight: 400;
+    src: url("./Satoshi-Regular.otf") format("opentype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Satoshi";
+    font-style: normal;
+    font-weight: 700;
+    src: url("./Satoshi-Bold.otf") format("opentype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Satoshi";
+    font-style: normal;
+    font-weight: 500;
+    src: url("./Satoshi-Medium.otf") format("opentype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Satoshi";
+    font-style: normal;
+    font-weight: 900;
+    src: url("./Satoshi-Black.otf") format("opentype");
 }

@@ -5,6 +5,8 @@ import { HomePage } from "./pages/HomePage";
 import { AnimatePresence } from "framer-motion";
 import Sidebar from "./components/SideBar";
 import Navbar from "./components/NavBar";
+import { MarketsPage } from "./pages/MarketsPage";
+import { MyBetsPage } from "./pages/MyBetsPage";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -26,6 +28,8 @@ function App() {
             <div className="min-h-screen flex flex-col">
                 <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/markets" element={<MarketsPage />} />
+                    <Route path="/bets" element={<MyBetsPage />} />
                 </Routes>
             </div>
         </div>
