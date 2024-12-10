@@ -7,6 +7,7 @@ import Sidebar from "./components/SideBar";
 import Navbar from "./components/NavBar";
 import { MarketsPage } from "./pages/MarketsPage";
 import { MyBetsPage } from "./pages/MyBetsPage";
+import { CreatePage } from "./pages/CreatePage";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -30,6 +31,7 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/markets" element={<MarketsPage />} />
                     <Route path="/bets" element={<MyBetsPage />} />
+                    <Route path="/create" element={<CreatePage />} />
                 </Routes>
             </div>
         </div>

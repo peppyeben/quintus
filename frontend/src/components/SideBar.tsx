@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         { icon: <FaHome />, label: "Dashboard", path: "/" },
         { icon: <FaTableCells />, label: "Markets", path: "/markets" },
         { icon: <FaChartBar />, label: "My Bets", path: "/bets" },
-        { icon: <FaPlus />, label: "Create", path: "/" },
+        { icon: <FaPlus />, label: "Create", path: "/create" },
     ];
     
     const menuItems2: MenuItem[] = [
