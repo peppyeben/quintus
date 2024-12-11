@@ -2,8 +2,10 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+]
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 [rpc_endpoints]
 bsc = "https://bsc-dataseed1.binance.org"
 bsc_testnet = "https://data-seed-prebsc-1-s1.binance.org:8545"

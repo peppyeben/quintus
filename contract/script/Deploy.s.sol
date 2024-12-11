@@ -1,25 +1,28 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
-import "../src/Nostradao.sol";
+import "../src/NostradaoMarket.sol";
+import "../src/NostradaoOracle.sol";
 
-contract DeployNostradao is Script {
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        
-        // Use BSC-specific addresses for oracle and fee collector
-        address oracle = address(0x1); // Replace with BSC oracle address
-        address feeCollector = address(0x2); // Replace with BSC fee collector address        
-        vm.startBroadcast(deployerPrivateKey);
+contract DeployScript is Script {
+    address public oracleAddress;
+    address public marketAddress;
 
-        Nostradao nostradao = new Nostradao(oracle, feeCollector);
+    function setUp() public {}
 
-         // Store deployed address
-        address deployedAddress = address(new Nostradao(oracle, feeCollector));
-        console.log("Nostradao deployed to:", deployedAddress);
+    function run() public {
+        // Deploy the NostradaoOracle contract
+        NostradaoOracle oracle = new NostradaoOracle();
+        oracleAddress = address(oracle);
+        console.log("Deployed NostradaoOracle at:", oracleAddress);
 
+        // Deploy the NostradaoMarket contract, passing in the oracle address
+        NostradaoMarket market = new NostradaoMarket(oracleAddress);
+        marketAddress = address(market);
+        console.log("Deployed NostradaoMarket at:", marketAddress);
 
-        vm.stopBroadcast();
+        // Set the market contract address in the oracle
+        oracle.setMarketContract(marketAddress);
     }
 }
