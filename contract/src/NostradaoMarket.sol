@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
@@ -10,13 +10,7 @@ import "./NostradaoOracle.sol";
 /// @dev Implements reentrancy protection and ownership mechanisms
 contract NostradaoMarket is Ownable, ReentrancyGuard {
     // Market categories to organize different types of prediction markets
-    enum MarketCategory {
-        SPORTS,
-        CRYPTO,
-        POLITICS,
-        ENTERTAINMENT,
-        OTHERS
-    }
+    enum MarketCategory { SPORTS, CRYPTO, POLITICS, ELECTION, OTHERS }
 
     /// @notice Structure defining a prediction market
     struct Market {
@@ -44,13 +38,28 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     uint256 public marketCount;                       // Total markets created
     uint256 public constant PLATFORM_FEE = 25;        // 2.5% platform fee
     uint256 public constant CREATOR_FEE = 10;         // 1% creator fee
-    uint256 public constant MARKET_CREATION_FEE = 0.1 ether; // Fee to create market
-
-    NostradaoOracle public oracle;                    // Oracle contract reference
+    uint256 public constant MARKET_CREATION_FEE = 0.01 ether; // Fee to create market
+    NostradaoOracle public immutable oracle;          // Oracle contract reference
 
     // Mappings
     mapping(uint256 => Market) public markets;        // Market ID to Market data
     mapping(uint256 => mapping(address => Bet[])) public userBets; // User bets per market
+
+    // Custom errors for gas optimization
+    error InvalidDeadline();
+    error InvalidResolutionTime();
+    error InsufficientOutcomes();
+    error InsufficientFee();
+    error MarketAlreadyResolved();
+    error MarketClosed();
+    error InvalidBetAmount();
+    error InvalidOutcome();
+    error TooEarlyToResolve();
+    error UnauthorizedOracle();
+    error NoWinningsToClaim();
+    error TransferFailed();
+    error MarketNotResolved();
+    error NoBetsOnWinningOutcome();
 
     // Events
     event MarketCreated(uint256 indexed marketId, string title, address creator, MarketCategory category);
@@ -65,28 +74,20 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     }
 
     /// @notice Creates a new prediction market
-    /// @param _title Market title
-    /// @param _description Market description
-    /// @param _deadline Betting deadline timestamp
-    /// @param _resolutionTime Resolution time timestamp
-    /// @param _outcomes Array of possible outcomes
-    /// @param _category Market category
     function createMarket(
-        string memory _title,
-        string memory _description, 
+        string calldata _title,
+        string calldata _description,
         uint256 _deadline,
         uint256 _resolutionTime,
-        uint256[] memory _outcomes,
+        uint256[] calldata _outcomes,
         MarketCategory _category
     ) external payable nonReentrant {
-        require(_deadline > block.timestamp, "Invalid deadline");
-        require(_resolutionTime > _deadline, "Invalid resolution time");
-        require(_outcomes.length >= 2, "Min 2 outcomes required");
-        require(msg.value >= MARKET_CREATION_FEE, "Insufficient creation fee");
+        if (_deadline <= block.timestamp) revert InvalidDeadline();
+        if (_resolutionTime <= _deadline) revert InvalidResolutionTime();
+        if (_outcomes.length < 2) revert InsufficientOutcomes();
+        if (msg.value < MARKET_CREATION_FEE) revert InsufficientFee();
 
-        uint256 marketId = marketCount++;
-        Market storage market = markets[marketId];
-        
+        Market storage market = markets[marketCount++];
         market.title = _title;
         market.description = _description;
         market.deadline = _deadline;
@@ -95,46 +96,43 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         market.outcomes = _outcomes;
         market.category = _category;
 
-        emit MarketCreated(marketId, _title, msg.sender, _category);
+        emit MarketCreated(marketCount - 1, _title, msg.sender, _category);
     }
 
     /// @notice Places a bet on a specific market outcome
-    /// @param _marketId ID of the market
-    /// @param _outcome Chosen outcome to bet on
     function placeBet(uint256 _marketId, uint256 _outcome) external payable nonReentrant {
         Market storage market = markets[_marketId];
-        require(!market.resolved, "Market already resolved");
-        require(block.timestamp < market.deadline, "Market closed");
-        require(msg.value > 0, "Bet amount must be > 0");
+        if (market.resolved) revert MarketAlreadyResolved();
+        if (block.timestamp >= market.deadline) revert MarketClosed();
+        if (msg.value == 0) revert InvalidBetAmount();
 
         bool validOutcome;
-        for(uint256 i = 0; i < market.outcomes.length; i++) {
+        uint256 len = market.outcomes.length;
+        for(uint256 i; i < len;) {
             if(market.outcomes[i] == _outcome) {
                 validOutcome = true;
                 break;
             }
+            unchecked { ++i; }
         }
-        require(validOutcome, "Invalid outcome");
+        if (!validOutcome) revert InvalidOutcome();
 
         market.totalBets[_outcome] += msg.value;
-        
         userBets[_marketId][msg.sender].push(Bet({
             amount: msg.value,
             outcome: _outcome,
             claimed: false
         }));
-        
+
         emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
     }
 
     /// @notice Resolves a market with the winning outcome
-    /// @param _marketId ID of the market to resolve
-    /// @param _outcome Winning outcome
     function resolveMarket(uint256 _marketId, uint256 _outcome) external {
+        if (msg.sender != address(oracle)) revert UnauthorizedOracle();
         Market storage market = markets[_marketId];
-        require(block.timestamp >= market.resolutionTime, "Too early to resolve");
-        require(!market.resolved, "Already resolved");
-        require(msg.sender == address(oracle), "Only oracle can resolve");
+        if (block.timestamp < market.resolutionTime) revert TooEarlyToResolve();
+        if (market.resolved) revert MarketAlreadyResolved();
 
         market.resolved = true;
         market.winningOutcome = _outcome;
@@ -143,46 +141,45 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     }
 
     /// @notice Allows winners to claim their winnings
-    /// @param _marketId ID of the market
     function claimWinnings(uint256 _marketId) external nonReentrant {
         Market storage market = markets[_marketId];
-        require(market.resolved, "Market not resolved");
-        
+        if (!market.resolved) revert MarketNotResolved();
+
+        uint256 totalWinningBets = market.totalBets[market.winningOutcome];
+        if (totalWinningBets == 0) revert NoBetsOnWinningOutcome();
+
+        uint256 winnings;
         Bet[] storage bets = userBets[_marketId][msg.sender];
-        uint256 winnings = 0;
+        uint256 len = bets.length;
         
-        for(uint256 i = 0; i < bets.length; i++) {
-            if(!bets[i].claimed && bets[i].outcome == market.winningOutcome) {
+        for (uint256 i; i < len;) {
+            if (!bets[i].claimed && bets[i].outcome == market.winningOutcome) {
                 bets[i].claimed = true;
-                uint256 betShare = (bets[i].amount * 1000) / market.totalBets[market.winningOutcome];
-                winnings += (market.totalBets[market.winningOutcome] * betShare) / 1000;
+                winnings += (bets[i].amount * totalWinningBets) / totalWinningBets;
             }
+            unchecked { ++i; }
         }
-        
-        require(winnings > 0, "No winnings to claim");
-        
-        uint256 platformFeeAmount = (winnings * PLATFORM_FEE) / 1000;
-        uint256 creatorFeeAmount = (winnings * CREATOR_FEE) / 1000;
-        uint256 finalWinnings = winnings - platformFeeAmount - creatorFeeAmount;
-        
-        payable(owner()).transfer(platformFeeAmount);
-        payable(market.creator).transfer(creatorFeeAmount);
-        payable(msg.sender).transfer(finalWinnings);
-        
-        emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
+
+        if (winnings == 0) revert NoWinningsToClaim();
+
+        _transferWinnings(market.creator, winnings);
+        emit WinningsClaimed(_marketId, msg.sender, winnings);
+    }
+
+    /// @notice Internal function to handle winnings transfer
+    function _transferWinnings(address creator, uint256 winnings) private {
+        uint256 platformFee = (winnings * PLATFORM_FEE) / 1000;
+        uint256 creatorFee = (winnings * CREATOR_FEE) / 1000;
+        uint256 finalWinnings = winnings - platformFee - creatorFee;
+
+        (bool success1, ) = owner().call{value: platformFee}("");
+        (bool success2, ) = creator.call{value: creatorFee}("");
+        (bool success3, ) = msg.sender.call{value: finalWinnings}("");
+
+        if (!success1 || !success2 || !success3) revert TransferFailed();
     }
 
     /// @notice Gets detailed information about a market
-    /// @param _marketId ID of the market
-    /// @return title The market title
-    /// @return description The market description
-    /// @return deadline The betting deadline timestamp
-    /// @return resolutionTime The resolution time timestamp
-    /// @return creator The address of the market creator
-    /// @return resolved Whether the market is resolved or not
-    /// @return outcomes The array of possible outcomes
-    /// @return winningOutcome The ID of the winning outcome
-    /// @return category The category of the market
     function getMarketInfo(uint256 _marketId) external view returns (
         string memory title,
         string memory description,
@@ -209,9 +206,6 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     }
 
     /// @notice Gets total bets placed on a specific outcome
-    /// @param _marketId ID of the market
-    /// @param _outcome Outcome to query
-    /// @return Total amount bet on the outcome
     function getMarketBets(uint256 _marketId, uint256 _outcome) external view returns (uint256) {
         return markets[_marketId].totalBets[_outcome];
     }

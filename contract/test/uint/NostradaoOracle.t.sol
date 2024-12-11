@@ -2,7 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../src/NostradaoOracle.sol";
+import "../../src/NostradaoMarket.sol";
+import "../../src/NostradaoOracle.sol";
+
 
 contract NostradaoOracleTest is Test {
     NostradaoOracle public oracle;
