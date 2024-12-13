@@ -3,26 +3,26 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import "../src/NostradaoMarket.sol";
-import "../src/NostradaoOracle.sol";
+import "../src/NostradaoBettingOracles.sol";
 
 contract DeployScript is Script {
-    address public oracleAddress;
+    address public bettingOracleAddress;
     address public marketAddress;
 
     function setUp() public {}
 
     function run() public {
-        // Deploy the NostradaoOracle contract
-        NostradaoOracle oracle = new NostradaoOracle();
-        oracleAddress = address(oracle);
-        console.log("Deployed NostradaoOracle at:", oracleAddress);
+        // Deploy the NostradaoBettingOracle contract
+        NostradaoBettingOracle bettingOracle = new NostradaoBettingOracle();
+        bettingOracleAddress = address(bettingOracle);
+        console.log("Deployed NostradaoBettingOracle at:", bettingOracleAddress);
 
-        // Deploy the NostradaoMarket contract, passing in the oracle address
-        NostradaoMarket market = new NostradaoMarket(oracleAddress);
+        // Deploy the NostradaoMarket contract, passing in the betting oracle address
+        NostradaoMarket market = new NostradaoMarket(bettingOracleAddress);
         marketAddress = address(market);
         console.log("Deployed NostradaoMarket at:", marketAddress);
 
-        // Set the market contract address in the oracle
-        oracle.setMarketContract(marketAddress);
+        // Set the betting contract address in the oracle
+        bettingOracle.setBettingContract(marketAddress);
     }
 }

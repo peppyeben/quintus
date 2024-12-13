@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "./NostradaoOracle.sol";
+import "./NostradaoBettingOracles.sol";
 
 /// @title NostradaoMarket - A decentralized prediction market platform
 /// @notice This contract allows users to create and participate in prediction markets
@@ -12,47 +12,54 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     // Market categories to organize different types of prediction markets
     enum MarketCategory { SPORTS, CRYPTO, POLITICS, ELECTION, OTHERS }
 
+    // Enum for Bet Status
+    enum BetStatus { Pending, Won, Lost }
+
     /// @notice Structure defining a prediction market
     struct Market {
-        string title;                                  // Market title
-        string description;                            // Detailed description
-        uint256 deadline;                             // Betting deadline
-        uint256 resolutionTime;                       // When the market can be resolved
-        address creator;                              // Market creator address
-        bool resolved;                                // Resolution status
-        uint256[] outcomes;                           // Possible outcomes
-        mapping(uint256 => uint256) totalBets;        // Total bets per outcome
-        uint256 winningOutcome;                       // Winning outcome ID
-        bool paid;                                    // Payment status
-        MarketCategory category;                      // Market category
+        string betTitle;                                 // Bet Title (string)
+        string description;                              // Bet Description (string)
+        uint256 betDeadline;                             // Bet Deadline (timestamp)
+        uint256 resolutionDeadline;                      // Resolution Deadline (timestamp)
+        address creator;                                 // Creator address
+        bool resolved;                                   // Bet resolved status
+        string[] outcomes;                               // Possible Outcomes (string array)
+        mapping(string => uint256) totalBets;            // Total bets per outcome (keyed by outcome)
+        uint256 totalPool;                               // Total amount of funds pooled in the market
+        string winningOutcome;                           // Winning outcome (string)
+        bool paid;                                       // Payment status for winner
+        MarketCategory category;                         // Category of the market
+        bool marketCreated;                              // Flag to prevent modification after creation
     }
+
 
     /// @notice Structure defining a user's bet
     struct Bet {
-        uint256 amount;                               // Bet amount
-        uint256 outcome;                              // Chosen outcome
-        bool claimed;                                 // Claim status
+        uint256 amount;             // Bet amount (in tokens)
+        string outcome;             // Chosen outcome (string)
+        BetStatus status;           // Status of the bet (Pending/Won/Lost)
+        uint256 potentialWinnings;  // Potential winnings for the bet
     }
 
     // State variables
-    uint256 public marketCount;                       // Total markets created
-    uint256 public constant PLATFORM_FEE = 25;        // 2.5% platform fee
-    uint256 public constant CREATOR_FEE = 10;         // 1% creator fee
-    uint256 public constant MARKET_CREATION_FEE = 0.01 ether; // Fee to create market
-    NostradaoOracle public immutable oracle;          // Oracle contract reference
+    uint256 public marketCount;                         // Total markets created
+    uint256 public constant PLATFORM_FEE = 25;          // 2.5% platform fee
+    uint256 public constant CREATOR_FEE = 10;           // 1% creator fee
+    uint256 public constant MARKET_CREATION_FEE = 0.01 ether; // Fee to create a new market (in BNB)
+    NostradaoBettingOracle public immutable oracle;            // Oracle contract reference for market resolution
 
     // Mappings
-    mapping(uint256 => Market) public markets;        // Market ID to Market data
+    mapping(uint256 => Market) public markets;          // Market ID to Market data
     mapping(uint256 => mapping(address => Bet[])) public userBets; // User bets per market
 
     // Custom errors for gas optimization
-    error InvalidDeadline();
-    error InvalidResolutionTime();
+    error InvalidBetDeadline();
+    error InvalidResolutionDeadline();
     error InsufficientOutcomes();
     error InsufficientFee();
     error MarketAlreadyResolved();
-    error MarketClosed();
-    error InvalidBetAmount();
+    error BettingDeadlinePassed();
+    error BettingAmountCannotBeZero();
     error InvalidOutcome();
     error TooEarlyToResolve();
     error UnauthorizedOracle();
@@ -60,56 +67,67 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     error TransferFailed();
     error MarketNotResolved();
     error NoBetsOnWinningOutcome();
+    error MarketNotCreated();
 
     // Events
-    event MarketCreated(uint256 indexed marketId, string title, address creator, MarketCategory category);
-    event BetPlaced(uint256 indexed marketId, address user, uint256 outcome, uint256 amount);
-    event MarketResolved(uint256 indexed marketId, uint256 winningOutcome);
+    event MarketCreated(uint256 indexed marketId, string betTitle, address creator, MarketCategory category);
+    event BetPlaced(uint256 indexed marketId, address user, string outcome, uint256 amount);
+    event MarketResolved(uint256 indexed marketId, string winningOutcome);
     event WinningsClaimed(uint256 indexed marketId, address user, uint256 amount);
 
     /// @notice Contract constructor
-    /// @param _oracle Address of the oracle contract
+    /// @param _oracle Address of the oracle contract for fetching winning outcomes
     constructor(address _oracle) Ownable(msg.sender) {
-        oracle = NostradaoOracle(_oracle);
+        oracle = NostradaoBettingOracle(_oracle);
     }
 
-    /// @notice Creates a new prediction market
+    /// @notice Creates a new prediction market (bet)
+    /// @param _betTitle Title of the prediction market
+    /// @param _description Description of the bet
+    /// @param _betDeadline Timestamp for when the betting closes
+    /// @param _resolutionDeadline Timestamp for when the bet can be resolved
+    /// @param _outcomes Array of possible outcomes for the bet
+    /// @param _category Category of the bet (e.g., Sports, Crypto)
     function createMarket(
-        string calldata _title,
-        string calldata _description,
-        uint256 _deadline,
-        uint256 _resolutionTime,
-        uint256[] calldata _outcomes,
+        string memory _betTitle,
+        string memory _description,
+        uint256 _betDeadline,
+        uint256 _resolutionDeadline,
+        string[] memory _outcomes,
         MarketCategory _category
     ) external payable nonReentrant {
-        if (_deadline <= block.timestamp) revert InvalidDeadline();
-        if (_resolutionTime <= _deadline) revert InvalidResolutionTime();
+        if (_betDeadline <= block.timestamp) revert InvalidBetDeadline();
+        if (_resolutionDeadline <= _betDeadline) revert InvalidResolutionDeadline();
         if (_outcomes.length < 2) revert InsufficientOutcomes();
         if (msg.value < MARKET_CREATION_FEE) revert InsufficientFee();
 
         Market storage market = markets[marketCount++];
-        market.title = _title;
+        market.betTitle = _betTitle;
         market.description = _description;
-        market.deadline = _deadline;
-        market.resolutionTime = _resolutionTime;
+        market.betDeadline = _betDeadline;
+        market.resolutionDeadline = _resolutionDeadline;
         market.creator = msg.sender;
         market.outcomes = _outcomes;
         market.category = _category;
+        market.marketCreated = true;
 
-        emit MarketCreated(marketCount - 1, _title, msg.sender, _category);
+        emit MarketCreated(marketCount - 1, _betTitle, msg.sender, _category);
     }
 
-    /// @notice Places a bet on a specific market outcome
-    function placeBet(uint256 _marketId, uint256 _outcome) external payable nonReentrant {
+    /// @notice Allows a user to place a bet on a specific outcome of a market
+    /// @param _marketId The ID of the market to place a bet on
+    /// @param _outcome The outcome the user is betting on
+    function placeBet(uint256 _marketId, string memory _outcome) external payable nonReentrant {
         Market storage market = markets[_marketId];
         if (market.resolved) revert MarketAlreadyResolved();
-        if (block.timestamp >= market.deadline) revert MarketClosed();
-        if (msg.value == 0) revert InvalidBetAmount();
+        if (block.timestamp >= market.betDeadline) revert BettingDeadlinePassed();
+        if (msg.value == 0) revert BettingAmountCannotBeZero();
 
+        // Validate outcome
         bool validOutcome;
         uint256 len = market.outcomes.length;
-        for(uint256 i; i < len;) {
-            if(market.outcomes[i] == _outcome) {
+        for (uint256 i; i < len;) {
+            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(_outcome))) {
                 validOutcome = true;
                 break;
             }
@@ -117,30 +135,51 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         }
         if (!validOutcome) revert InvalidOutcome();
 
+        // Update total market pool
+        market.totalPool += msg.value;
         market.totalBets[_outcome] += msg.value;
+
+        // Calculate potential winnings based on user's bet proportion
+        uint256 potentialWinnings = (msg.value * market.totalPool) / market.totalBets[_outcome];
+
+        // Record the user's bet
         userBets[_marketId][msg.sender].push(Bet({
             amount: msg.value,
             outcome: _outcome,
-            claimed: false
+            status: BetStatus.Pending,
+            potentialWinnings: potentialWinnings
         }));
 
         emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
     }
 
-    /// @notice Resolves a market with the winning outcome
-    function resolveMarket(uint256 _marketId, uint256 _outcome) external {
-        if (msg.sender != address(oracle)) revert UnauthorizedOracle();
+    /// @notice Resolves a market with the winning outcome determined by the oracle
+    /// @param _marketId The ID of the market to resolve
+    function resolveMarket(uint256 _marketId) external nonReentrant {
         Market storage market = markets[_marketId];
-        if (block.timestamp < market.resolutionTime) revert TooEarlyToResolve();
+        if (!market.marketCreated) revert MarketNotCreated();
+        if (block.timestamp < market.resolutionDeadline) revert TooEarlyToResolve();
         if (market.resolved) revert MarketAlreadyResolved();
 
+        // Validate the winning outcome exists
+        bool validOutcome = false;
+        for (uint256 i = 0; i < market.outcomes.length; i++) {
+            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(market.winningOutcome))) {
+                validOutcome = true;
+                break;
+            }
+        }
+        if (!validOutcome) revert InvalidOutcome();
+
+        // Update state variables
         market.resolved = true;
-        market.winningOutcome = _outcome;
-        
-        emit MarketResolved(_marketId, _outcome);
+
+        // Emit event after state changes
+        emit MarketResolved(_marketId, market.winningOutcome);
     }
 
-    /// @notice Allows winners to claim their winnings
+    /// @notice Allows winners to claim their winnings from the resolved market
+    /// @param _marketId The ID of the resolved market
     function claimWinnings(uint256 _marketId) external nonReentrant {
         Market storage market = markets[_marketId];
         if (!market.resolved) revert MarketNotResolved();
@@ -148,55 +187,101 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         uint256 totalWinningBets = market.totalBets[market.winningOutcome];
         if (totalWinningBets == 0) revert NoBetsOnWinningOutcome();
 
-        uint256 winnings;
+        uint256 totalPool = market.totalPool;
+        uint256 userWinnings = 0;
         Bet[] storage bets = userBets[_marketId][msg.sender];
         uint256 len = bets.length;
-        
+
+        // Calculate the user's total winnings from their valid bets
         for (uint256 i; i < len;) {
-            if (!bets[i].claimed && bets[i].outcome == market.winningOutcome) {
-                bets[i].claimed = true;
-                winnings += (bets[i].amount * totalWinningBets) / totalWinningBets;
+            if (
+                bets[i].status == BetStatus.Pending &&
+                keccak256(abi.encodePacked(bets[i].outcome)) == keccak256(abi.encodePacked(market.winningOutcome))
+            ) {
+                bets[i].status = BetStatus.Won;
+                userWinnings += (bets[i].amount * totalPool) / totalWinningBets;
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
-        if (winnings == 0) revert NoWinningsToClaim();
+        if (userWinnings == 0) revert NoWinningsToClaim();
 
-        _transferWinnings(market.creator, winnings);
-        emit WinningsClaimed(_marketId, msg.sender, winnings);
+        // Deduct platform and creator fees
+        uint256 platformFee = (userWinnings * PLATFORM_FEE) / 1000; // 2.5% fee
+        uint256 creatorFee = (userWinnings * CREATOR_FEE) / 1000;   // 1% fee
+        uint256 finalWinnings = userWinnings - platformFee - creatorFee;
+
+        // Transfer fees and winnings
+        (bool platformSuccess, ) = owner().call{value: platformFee}("");
+        (bool creatorSuccess, ) = market.creator.call{value: creatorFee}("");
+        (bool userSuccess, ) = msg.sender.call{value: finalWinnings}("");
+
+        if (!platformSuccess || !creatorSuccess || !userSuccess) revert TransferFailed();
+
+        emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
     }
 
     /// @notice Internal function to handle winnings transfer
+    /// @param creator The address of the market creator
+    /// @param winnings The total amount of winnings to distribute
     function _transferWinnings(address creator, uint256 winnings) private {
-        uint256 platformFee = (winnings * PLATFORM_FEE) / 1000;
-        uint256 creatorFee = (winnings * CREATOR_FEE) / 1000;
+        // Calculate fees
+        uint256 platformFee = (winnings * PLATFORM_FEE) / 1000; // 2.5% platform fee
+        uint256 creatorFee = (winnings * CREATOR_FEE) / 1000;   // 1% creator fee
         uint256 finalWinnings = winnings - platformFee - creatorFee;
 
-        (bool success1, ) = owner().call{value: platformFee}("");
-        (bool success2, ) = creator.call{value: creatorFee}("");
-        (bool success3, ) = msg.sender.call{value: finalWinnings}("");
+        // Transfer platform fee to the owner
+        if (platformFee > 0) {
+            (bool platformSuccess, ) = owner().call{value: platformFee}("");
+            if (!platformSuccess) revert TransferFailed();
+        }
 
-        if (!success1 || !success2 || !success3) revert TransferFailed();
+        // Transfer creator fee to the market creator
+        if (creatorFee > 0) {
+            (bool creatorSuccess, ) = creator.call{value: creatorFee}("");
+            if (!creatorSuccess) revert TransferFailed();
+        }
+
+        // Transfer final winnings to the user
+        if (finalWinnings > 0) {
+            (bool userSuccess, ) = msg.sender.call{value: finalWinnings}("");
+            if (!userSuccess) revert TransferFailed();
+        }
     }
 
-    /// @notice Gets detailed information about a market
+    /// @notice Resolves a bet with the winning outcome from the oracle
+    /// @param _marketId The ID of the market to resolve
+    /// @param _outcome The winning outcome
+    function resolveBet(uint256 _marketId, string memory _outcome) external {
+        if (msg.sender != address(oracle)) revert UnauthorizedOracle();
+        Market storage market = markets[_marketId];
+        market.winningOutcome = _outcome;
+        market.resolved = true;
+        emit MarketResolved(_marketId, _outcome);
+    }
+
+
+
+    /// @notice Fetches details about a specific market
     function getMarketInfo(uint256 _marketId) external view returns (
-        string memory title,
+        string memory betTitle,
         string memory description,
-        uint256 deadline,
-        uint256 resolutionTime,
+        uint256 betDeadline,
+        uint256 resolutionDeadline,
         address creator,
         bool resolved,
-        uint256[] memory outcomes,
-        uint256 winningOutcome,
+        string[] memory outcomes,
+        string memory winningOutcome,
         MarketCategory category
     ) {
         Market storage market = markets[_marketId];
         return (
-            market.title,
+            market.betTitle,
             market.description,
-            market.deadline,
-            market.resolutionTime,
+            market.betDeadline,
+            market.resolutionDeadline,
             market.creator,
             market.resolved,
             market.outcomes,
@@ -205,8 +290,8 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         );
     }
 
-    /// @notice Gets total bets placed on a specific outcome
-    function getMarketBets(uint256 _marketId, uint256 _outcome) external view returns (uint256) {
+    /// @notice Gets total bets placed on a specific outcome for a market
+    function getMarketBets(uint256 _marketId, string memory _outcome) external view returns (uint256) {
         return markets[_marketId].totalBets[_outcome];
     }
 }

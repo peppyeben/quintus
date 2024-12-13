@@ -3,339 +3,797 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../../src/NostradaoMarket.sol";
-import "../../src/NostradaoOracle.sol";
-
-
+import "../../src/NostradaoBettingOracles.sol";
 
 contract NostradaoMarketTest is Test {
     NostradaoMarket public market;
-    NostradaoOracle public oracle;
+    NostradaoBettingOracle public oracle;
     
-    address public owner = address(1);
-    address public user1 = address(2);
-    address public user2 = address(3);
+    address public owner;
+    address public user1;
+    address public user2;
+    address public user3;
+    
+    uint256 public constant MARKET_CREATION_FEE = 0.01 ether;
     
     function setUp() public {
-        vm.startPrank(owner);
-        oracle = new NostradaoOracle();
+        owner = address(this);
+        user1 = makeAddr("user1");
+        user2 = makeAddr("user2");
+        user3 = makeAddr("user3");
+        
+        oracle = new NostradaoBettingOracle();
         market = new NostradaoMarket(address(oracle));
-        oracle.setMarketContract(address(market));
-        vm.stopPrank();
+        
+        vm.deal(user1, 100 ether);
+        vm.deal(user2, 100 ether);
+        vm.deal(user3, 100 ether);
     }
 
-    function testMarketCreation() public {
+    receive() external payable {}
+
+    function testCreateMarket() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 betDeadline = block.timestamp + 1 days;
+        uint256 resolutionDeadline = block.timestamp + 2 days;
+        
         vm.startPrank(user1);
-        vm.deal(user1, 1 ether);
-        
-        uint256[] memory outcomes = new uint256[](2);
-        outcomes[0] = 1;
-        outcomes[1] = 2;
-        
-        market.createMarket{value: 0.1 ether}(
-            "Will ETH reach $5000?",
-            "Price prediction for ETH",
-            block.timestamp + 1 days,
-            block.timestamp + 2 days,
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
             outcomes,
-            NostradaoMarket.MarketCategory.CRYPTO
+            NostradaoMarket.MarketCategory.SPORTS
         );
-        
-        (
-            string memory title,
-            ,,,,,,,
-            NostradaoMarket.MarketCategory category
-        ) = market.getMarketInfo(0);
-        
-        assertEq(title, "Will ETH reach $5000?");
-        assertEq(uint(category), uint(NostradaoMarket.MarketCategory.CRYPTO));
         vm.stopPrank();
+        
+        assertEq(market.marketCount(), 1);
     }
 
     function testPlaceBet() public {
-        // Setup market
-        testMarketCreation();
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
         
-        vm.startPrank(user2);
-        vm.deal(user2, 1 ether);
+        uint256 betDeadline = block.timestamp + 1 days;
+        uint256 resolutionDeadline = block.timestamp + 2 days;
         
-        market.placeBet{value: 0.5 ether}(0, 1);
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
         
-        uint256 totalBets = market.getMarketBets(0, 1);
-        assertEq(totalBets, 0.5 ether);
-        vm.stopPrank();
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        assertEq(market.getMarketBets(0, "Team A"), 1 ether);
     }
-
-    function testMarketResolution() public {
-        // Setup market and bets
-        testPlaceBet();
+    function testResolveMarket() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
         
-        vm.warp(block.timestamp + 2 days);
+        uint256 betDeadline = 86401;
+        uint256 resolutionDeadline = 172801;
         
-        vm.startPrank(owner);
-        oracle.resolveMarket(0, 1);
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
         
-        (,,,,,bool resolved,,uint256 winningOutcome,) = market.getMarketInfo(0);
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        vm.warp(86402); // Warp past bet deadline
+        
+        // Set oracle permissions first
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.warp(172801); // Warp to resolution deadline
+        
+        // Resolve as owner through oracle
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        (,,,,, bool resolved,,string memory winningOutcome,) = market.getMarketInfo(0);
         assertTrue(resolved);
-        assertEq(winningOutcome, 1);
-        vm.stopPrank();
+        assertEq(keccak256(abi.encodePacked(winningOutcome)), keccak256(abi.encodePacked("Team A")));
     }
-
     function testClaimWinnings() public {
-    // Setup resolved market with more explicit bet scenario
-    testMarketCreation();
-    
-    // Multiple users place bets
-    vm.startPrank(user1);
-    vm.deal(user1, 1 ether);
-    market.placeBet{value: 0.3 ether}(0, 1);
-    vm.stopPrank();
-
-    vm.startPrank(user2);
-    vm.deal(user2, 1 ether);
-    market.placeBet{value: 0.5 ether}(0, 1);
-    vm.stopPrank();
-    
-    // Advance time and resolve market
-    vm.warp(block.timestamp + 2 days);
-    
-    vm.startPrank(owner);
-    oracle.resolveMarket(0, 1);
-    vm.stopPrank();
-    
-    // Debug: Print market details
-    uint256 totalMarketBets = market.getMarketBets(0, 1);
-    console.log("Total Market Bets:", totalMarketBets);
-    
-    uint256 initialBalance = user2.balance;
-    
-    vm.startPrank(user2);
-    market.claimWinnings(0);
-    
-    uint256 finalBalance = user2.balance;
-    console.log("Initial Balance:", initialBalance);
-    console.log("Final Balance:", finalBalance);
-    
-    assertTrue(finalBalance > initialBalance);
-    vm.stopPrank();
-    }
-    function testFailInvalidOutcome() public {
-        testMarketCreation();
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
         
-        vm.startPrank(user2);
-        vm.deal(user2, 1 ether);
+        uint256 betDeadline = 86401;
+        uint256 resolutionDeadline = 172801;
         
-        market.placeBet{value: 0.5 ether}(0, 3); // Should fail - invalid outcome
-        vm.stopPrank();
-    }
-
-    function testFailEarlyResolution() public {
-        testPlaceBet();
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
         
-        vm.startPrank(owner);
-        oracle.resolveMarket(0, 1); // Should fail - too early
-        vm.stopPrank();
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        vm.warp(86402); // Warp past bet deadline
+        
+        // Set oracle permissions first
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.warp(172801); // Warp to resolution deadline
+        
+        // Resolve as owner
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        uint256 balanceBefore = user2.balance;
+        vm.prank(user2);
+        market.claimWinnings(0);
+        uint256 balanceAfter = user2.balance;
+        
+        assertTrue(balanceAfter > balanceBefore);
     }
 
-    function testFailBetAfterDeadline() public {
-    testMarketCreation();
-    vm.warp(block.timestamp + 1 days + 1); // After deadline
 
-    vm.startPrank(user1);
-    vm.deal(user1, 1 ether);
-
-    market.placeBet{value: 0.5 ether}(0, 1); // Should fail
-    vm.stopPrank();
+    function testFailInvalidBetDeadline() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 betDeadline = block.timestamp - 1;
+        uint256 resolutionDeadline = block.timestamp + 2 days;
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
     }
+    function testFailInsufficientMarketCreationFee() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
     
-    function testFailZeroValueBet() public {
-    testMarketCreation();
-
-    vm.startPrank(user1);
-    vm.deal(user1, 1 ether);
-
-    market.placeBet{value: 0 ether}(0, 1); // Should fail
-    vm.stopPrank();
-    }
-    function testFailDoubleClaim() public {
-    testClaimWinnings();
-
-    // User2 claims winnings again
-    vm.startPrank(user2);
-    market.claimWinnings(0); // Should fail
-    vm.stopPrank();
+    vm.prank(user1);
+    market.createMarket{value: 0.009 ether}( // Less than required fee
+        "World Cup Final",
+        "Who will win?",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        NostradaoMarket.MarketCategory.SPORTS
+    );
     }
 
-    function testCreatorFeeReceived() public {
-    testClaimWinnings();
-    
-    uint256 totalPool = 0.8 ether;
-    uint256 userBetAmount = 0.5 ether;
-    uint256 winnings = (userBetAmount * totalPool) / totalPool;
-    uint256 expectedCreatorFee = (winnings * market.CREATOR_FEE()) / 1000;
-    
-    // Creator should receive 0.705 ETH (0.7 ETH bet + 0.005 ETH fee)
-    assertEq(user1.balance, 705000000000000000);
-}
-
-function testPayoutCalculation() public {
-    testClaimWinnings();
-
-    uint256 totalPool = 0.8 ether;
-    uint256 userBetAmount = 0.5 ether;
-    uint256 winnings = (userBetAmount * totalPool) / totalPool;
-    uint256 platformFee = (winnings * market.PLATFORM_FEE()) / 1000;
-    uint256 creatorFee = (winnings * market.CREATOR_FEE()) / 1000;
-    uint256 expectedPayout = winnings - platformFee - creatorFee;
-
-    // User2 should receive 0.9825 ETH (original bet + winnings - fees)
-    assertEq(user2.balance, 982500000000000000);
-}
-    function testFailNoWinningsToClaim() public {
-    testClaimWinnings();
-
-    vm.startPrank(user2);
-    market.claimWinnings(0); // No bets on winning outcome
-    vm.stopPrank();
+    function testFailInsufficientOutcomes() public {
+        string[] memory outcomes = new string[](1); // Only one outcome
+        outcomes[0] = "Team A";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
     }
 
-
-    function testFeeCalculations() public {
-    uint256 totalWinnings = 1000 ether;
-
-    uint256 platformFee = (totalWinnings * 25) / 1000; // 2.5%
-    uint256 creatorFee = (totalWinnings * 10) / 1000;  // 1%
-    uint256 finalWinnings = totalWinnings - platformFee - creatorFee;
-
-    assertEq(platformFee, 25 ether, "Platform fee incorrect");
-    assertEq(creatorFee, 10 ether, "Creator fee incorrect");
-    assertEq(finalWinnings, 965 ether, "Final winnings incorrect");
-    }
-
-    function testMultipleMarketsCreation() public {
-    vm.startPrank(user1);
-    vm.deal(user1, 2 ether);
+    function testExactWinningAmounts() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
     
-    uint256[] memory outcomes = new uint256[](2);
-    outcomes[0] = 1;
-    outcomes[1] = 2;
-    
-    // Create first market
-    market.createMarket{value: 0.01 ether}(
-        "Market 1",
-        "First market description",
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final",
+        "Who will win?",
         block.timestamp + 1 days,
         block.timestamp + 2 days,
         outcomes,
         NostradaoMarket.MarketCategory.SPORTS
     );
     
-    // Create second market
-    market.createMarket{value: 0.01 ether}(
-        "Market 2",
-        "Second market description",
-        block.timestamp + 3 days,
-        block.timestamp + 4 days,
+    // User2 bets 10 ETH on Team A
+    uint256 betAmount = 10 ether;
+    vm.prank(user2);
+    market.placeBet{value: betAmount}(0, "Team A");
+    
+    vm.warp(block.timestamp + 2 days + 1);
+    
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+    
+    // Calculate exact expected amounts
+    uint256 expectedPlatformFee = (betAmount * 25) / 1000; // 2.5%
+    uint256 expectedCreatorFee = (betAmount * 10) / 1000;  // 1%
+    uint256 expectedWinnings = betAmount - expectedPlatformFee - expectedCreatorFee;
+    
+    uint256 ownerBalanceBefore = owner.balance;
+    uint256 creatorBalanceBefore = user1.balance;
+    uint256 winnerBalanceBefore = user2.balance;
+    
+    vm.prank(user2);
+    market.claimWinnings(0);
+    
+    // Verify exact amounts with no tolerance
+    assertEq(owner.balance - ownerBalanceBefore, expectedPlatformFee);
+    assertEq(user1.balance - creatorBalanceBefore, expectedCreatorFee);
+    assertEq(user2.balance - winnerBalanceBefore, expectedWinnings);
+    }
+
+    function testGetMarketInfoAndBets() public {
+    string[] memory outcomes = new string[](3);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    outcomes[2] = "Draw";
+    
+    uint256 betDeadline = block.timestamp + 1 days;
+    uint256 resolutionDeadline = block.timestamp + 2 days;
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Premier League Final",
+        "Who will win the match?",
+        betDeadline,
+        resolutionDeadline,
         outcomes,
-        NostradaoMarket.MarketCategory.CRYPTO
+        NostradaoMarket.MarketCategory.SPORTS
     );
     
-    assertEq(market.marketCount(), 2);
-    vm.stopPrank();
-    }
-
-    function testMultipleUsersBetting() public {
-    testMarketCreation();
+    // Place different bets
+    vm.prank(user1);
+    market.placeBet{value: 2 ether}(0, "Team A");
     
-    address user3 = address(4);
-    address user4 = address(5);
+    vm.prank(user2);
+    market.placeBet{value: 3 ether}(0, "Team B");
     
-    // User2 bets
-    vm.startPrank(user2);
-    vm.deal(user2, 1 ether);
-    market.placeBet{value: 0.2 ether}(0, 1);
-    vm.stopPrank();
+    vm.prank(user2);
+    market.placeBet{value: 1.5 ether}(0, "Draw");
     
-    // User3 bets
-    vm.startPrank(user3);
-    vm.deal(user3, 1 ether);
-    market.placeBet{value: 0.3 ether}(0, 1);
-    vm.stopPrank();
-    
-    // User4 bets
-    vm.startPrank(user4);
-    vm.deal(user4, 1 ether);
-    market.placeBet{value: 0.4 ether}(0, 2);
-    vm.stopPrank();
-    
-    assertEq(market.getMarketBets(0, 1), 0.5 ether);
-    assertEq(market.getMarketBets(0, 2), 0.4 ether);
-    }
-
-    function testFailInsufficientCreationFee() public {
-    vm.startPrank(user1);
-    vm.deal(user1, 1 ether);
-    
-    uint256[] memory outcomes = new uint256[](2);
-    outcomes[0] = 1;
-    outcomes[1] = 2;
-    
-    market.createMarket{value: 0.005 ether}(
-        "Will fail",
-        "Insufficient fee",
-        block.timestamp + 1 days,
-        block.timestamp + 2 days,
-        outcomes,
-        NostradaoMarket.MarketCategory.OTHERS
-    );
-    vm.stopPrank();
-    }
-
-    function testMarketInfoRetrieval() public {
-    testMarketCreation();
-    
+    // Verify market info
     (
         string memory title,
         string memory description,
-        uint256 deadline,
-        uint256 resolutionTime,
+        uint256 retrievedBetDeadline,
+        uint256 retrievedResolutionDeadline,
         address creator,
         bool resolved,
-        uint256[] memory outcomes,
-        uint256 winningOutcome,
+        string[] memory retrievedOutcomes,
+        string memory winningOutcome,
         NostradaoMarket.MarketCategory category
     ) = market.getMarketInfo(0);
     
-    assertEq(title, "Will ETH reach $5000?");
-    assertEq(description, "Price prediction for ETH");
+    // Assert market info
+    assertEq(title, "Premier League Final");
+    assertEq(description, "Who will win the match?");
+    assertEq(retrievedBetDeadline, betDeadline);
+    assertEq(retrievedResolutionDeadline, resolutionDeadline);
     assertEq(creator, user1);
     assertFalse(resolved);
-    assertEq(outcomes.length, 2);
-    assertEq(uint(category), uint(NostradaoMarket.MarketCategory.CRYPTO));
+    assertEq(retrievedOutcomes.length, 3);
+    assertEq(winningOutcome, "");
+    assertEq(uint(category), uint(NostradaoMarket.MarketCategory.SPORTS));
+    
+    // Verify bet amounts for each outcome
+    assertEq(market.getMarketBets(0, "Team A"), 2 ether);
+    assertEq(market.getMarketBets(0, "Team B"), 3 ether);
+    assertEq(market.getMarketBets(0, "Draw"), 1.5 ether);
     }
 
-    function testMultipleOutcomes() public {
-    vm.startPrank(user1);
-    vm.deal(user1, 1 ether);
+
+
+    function testFailBetAfterDeadline() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.warp(block.timestamp + 1 days + 1); // Past betting deadline
+        
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+    }
+
+    function testFailBetOnInvalidOutcome() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team C"); // Invalid outcome
+    }
+
+    function testFailClaimBeforeResolution() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        vm.prank(user2);
+        market.claimWinnings(0); // Should fail as market isn't resolved
+    }
+
+    function testFailResolutionBeforeDeadline() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
     
-    uint256[] memory outcomes = new uint256[](4);
-    outcomes[0] = 1;
-    outcomes[1] = 2;
-    outcomes[2] = 3;
-    outcomes[3] = 4;
-    
-    market.createMarket{value: 0.01 ether}(
-        "Multiple outcomes",
-        "Market with 4 possible outcomes",
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final",
+        "Who will win?",
         block.timestamp + 1 days,
         block.timestamp + 2 days,
         outcomes,
-        NostradaoMarket.MarketCategory.POLITICS
+        NostradaoMarket.MarketCategory.SPORTS
     );
     
-    (, , , , , , uint256[] memory marketOutcomes, , ) = market.getMarketInfo(0);
-    assertEq(marketOutcomes.length, 4);
-    vm.stopPrank();
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    
+    // Try to resolve market before resolution deadline
+    market.resolveMarket(0);
     }
 
-}
 
+    function testFailDoubleResolution() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.warp(block.timestamp + 2 days + 1);
+        
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        // Try to resolve again
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team B");
+    }
+
+    function testTransferWinningsExactAmounts() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final",
+        "Who will win?",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        NostradaoMarket.MarketCategory.SPORTS
+    );
+    
+    // Place multiple bets on Team A
+    vm.prank(user2);
+    market.placeBet{value: 5 ether}(0, "Team A");
+    
+    vm.prank(user3);
+    market.placeBet{value: 3 ether}(0, "Team A");
+    
+    // Place bet on Team B
+    vm.prank(user1);
+    market.placeBet{value: 2 ether}(0, "Team B");
+    
+    uint256 totalPool = 10 ether; // 5 + 3 + 2 ether
+    uint256 winningPool = 8 ether; // 5 + 3 ether (Team A bets)
+    
+    // Record initial balances
+    uint256 ownerInitialBalance = owner.balance;
+    uint256 creatorInitialBalance = user1.balance;
+    uint256 winner1InitialBalance = user2.balance;
+    uint256 winner2InitialBalance = user3.balance;
+    
+    // Resolve market
+    vm.warp(block.timestamp + 2 days + 1);
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+    
+    // Winners claim their winnings
+    vm.prank(user2);
+    market.claimWinnings(0);
+    vm.prank(user3);
+    market.claimWinnings(0);
+    
+    // Calculate expected amounts
+    uint256 platformFee = (totalPool * 25) / 1000; // 2.5%
+    uint256 creatorFee = (totalPool * 10) / 1000;  // 1%
+    
+    uint256 winner1Share = (5 ether * totalPool) / winningPool;
+    uint256 winner2Share = (3 ether * totalPool) / winningPool;
+    
+    uint256 winner1ExpectedWinnings = winner1Share - (winner1Share * 35) / 1000; // Minus fees
+    uint256 winner2ExpectedWinnings = winner2Share - (winner2Share * 35) / 1000; // Minus fees
+    
+    // Verify exact amounts received
+    assertEq(owner.balance - ownerInitialBalance, platformFee);
+    assertEq(user1.balance - creatorInitialBalance, creatorFee);
+    assertEq(user2.balance - winner1InitialBalance, winner1ExpectedWinnings);
+    assertEq(user3.balance - winner2InitialBalance, winner2ExpectedWinnings);
+    }
+
+
+
+    function testFailClaimWithoutBetting() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.warp(block.timestamp + 2 days + 1);
+        
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        // Try to claim without placing any bets
+        vm.prank(user2);
+        market.claimWinnings(0);
+    }
+
+    function testCorrectFeeDistribution() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.prank(user2);
+        market.placeBet{value: 10 ether}(0, "Team A");
+        
+        vm.warp(block.timestamp + 2 days + 1);
+        
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        uint256 ownerBalanceBefore = owner.balance;
+        uint256 creatorBalanceBefore = user1.balance;
+        
+        vm.prank(user2);
+        market.claimWinnings(0);
+        
+        uint256 platformFee = (10 ether * 25) / 1000; // 2.5%
+        uint256 creatorFee = (10 ether * 10) / 1000;  // 1%
+        
+        assertEq(owner.balance - ownerBalanceBefore, platformFee);
+        assertEq(user1.balance - creatorBalanceBefore, creatorFee);
+    }
+
+    function testMultipleOutcomesBetting() public {
+        string[] memory outcomes = new string[](3);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        outcomes[2] = "Draw";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.prank(user1);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team B");
+        
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Draw");
+        
+        assertEq(market.getMarketBets(0, "Team A"), 1 ether);
+        assertEq(market.getMarketBets(0, "Team B"), 1 ether);
+        assertEq(market.getMarketBets(0, "Draw"), 1 ether);
+    }
+
+
+    function testMultipleBetsAndClaims() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        // Multiple bets from different users
+        vm.prank(user1);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        
+        vm.prank(user2);
+        market.placeBet{value: 2 ether}(0, "Team A");
+        
+        vm.warp(block.timestamp + 1 days + 1);
+        
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.warp(block.timestamp + 1 days);
+        
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        uint256 user1BalanceBefore = user1.balance;
+        uint256 user2BalanceBefore = user2.balance;
+        
+        vm.prank(user1);
+        market.claimWinnings(0);
+        
+        vm.prank(user2);
+        market.claimWinnings(0);
+        
+        assertTrue(user1.balance > user1BalanceBefore);
+        assertTrue(user2.balance > user2BalanceBefore);
+    }
+
+        function testMarketInfoAccuracy() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 betDeadline = block.timestamp + 1 days;
+        uint256 resolutionDeadline = block.timestamp + 2 days;
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        (
+            string memory title,
+            string memory description,
+            uint256 retrievedBetDeadline,
+            uint256 retrievedResolutionDeadline,
+            address creator,
+            bool resolved,
+            string[] memory retrievedOutcomes,
+            string memory winningOutcome,
+            NostradaoMarket.MarketCategory category
+        ) = market.getMarketInfo(0);
+        
+        assertEq(title, "World Cup Final");
+        assertEq(description, "Who will win?");
+        assertEq(retrievedBetDeadline, betDeadline);
+        assertEq(retrievedResolutionDeadline, resolutionDeadline);
+        assertEq(creator, user1);
+        assertFalse(resolved);
+        assertEq(retrievedOutcomes.length, 2);
+        assertEq(retrievedOutcomes[0], "Team A");
+        assertEq(retrievedOutcomes[1], "Team B");
+        assertEq(winningOutcome, "");
+        assertEq(uint(category), uint(NostradaoMarket.MarketCategory.SPORTS));
+    }
+
+    function testTotalPoolAccumulation() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        vm.prank(user1);
+        market.placeBet{value: 1 ether}(0, "Team A");
+        assertEq(market.getMarketBets(0, "Team A"), 1 ether);
+        
+        vm.prank(user2);
+        market.placeBet{value: 2 ether}(0, "Team A");
+        assertEq(market.getMarketBets(0, "Team A"), 3 ether);
+        
+        vm.prank(user2);
+        market.placeBet{value: 1.5 ether}(0, "Team B");
+        assertEq(market.getMarketBets(0, "Team B"), 1.5 ether);
+    }
+
+    function testExactFeeCalculations() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "World Cup Final",
+            "Who will win?",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        uint256 betAmount = 10 ether;
+        vm.prank(user2);
+        market.placeBet{value: betAmount}(0, "Team A");
+        
+        vm.warp(block.timestamp + 2 days + 1);
+        
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+        
+        vm.prank(owner);
+        oracle.resolveBet(0, "Team A");
+        
+        uint256 expectedPlatformFee = (betAmount * 25) / 1000; // 2.5%
+        uint256 expectedCreatorFee = (betAmount * 10) / 1000;  // 1%
+        uint256 expectedWinnings = betAmount - expectedPlatformFee - expectedCreatorFee;
+        
+        uint256 ownerBalanceBefore = owner.balance;
+        uint256 creatorBalanceBefore = user1.balance;
+        uint256 winnerBalanceBefore = user2.balance;
+        
+        vm.prank(user2);
+        market.claimWinnings(0);
+        
+        assertEq(owner.balance - ownerBalanceBefore, expectedPlatformFee);
+        assertEq(user1.balance - creatorBalanceBefore, expectedCreatorFee);
+        assertEq(user2.balance - winnerBalanceBefore, expectedWinnings);
+    }
+
+    
+
+
+
+    function testMarketEdgeCases() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        // Test exact deadline
+        uint256 betDeadline = block.timestamp;
+        uint256 resolutionDeadline = block.timestamp + 1;
+        
+        vm.expectRevert();
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "Test Market",
+            "Description",
+            betDeadline,
+            resolutionDeadline,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+    }
+
+    function testExactFeeTransfers() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 initialBalance = address(this).balance;
+        
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "Test Market",
+            "Description",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            NostradaoMarket.MarketCategory.SPORTS
+        );
+        
+        assertEq(address(this).balance, initialBalance - MARKET_CREATION_FEE);
+    }
+
+
+
+}
