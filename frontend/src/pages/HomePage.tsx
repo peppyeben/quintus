@@ -1,12 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { generateRandomBets } from "../utils/bets";
 import { FeaturedCard } from "../components/FeaturedCard";
 import { PredictionMarkets } from "../components/PredictionMarkets";
+import { getMarkets } from "@/utils/bets";
 
 export const HomePage: React.FC = () => {
-    const randomBets = generateRandomBets(3); // Generate 3 random bets
-    const randomPredictionMarketsBets = generateRandomBets(10);
+    const randomBets = getMarkets(3); // Generate 3 random bets
+    const randomPredictionMarketsBets = getMarkets(10);
 
     return (
         <motion.div className="flex flex-col space-y-5 justify-start items-center">

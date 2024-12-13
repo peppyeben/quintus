@@ -12,6 +12,7 @@
     "dependencies": {
         "@coinbase/onchainkit": "^0.33.6",
         "@hookform/resolvers": "^3.9.1",
+        "@radix-ui/react-dialog": "^1.1.3",
         "@radix-ui/react-popover": "^1.1.2",
         "@radix-ui/react-slot": "^1.1.0",
         "@rainbow-me/rainbowkit": "^2.2.1",

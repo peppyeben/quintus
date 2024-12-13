@@ -2,6 +2,7 @@ import React from "react";
 import randomImage from "../assets/random-image.png";
 
 interface BetProps {
+    id: string;
     title: string;
     description: string;
     image: string;

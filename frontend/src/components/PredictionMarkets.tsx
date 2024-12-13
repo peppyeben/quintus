@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import randomImage from "../assets/random-image.png";
 import { ChevronDown } from "lucide-react";
+import { useModal } from "@/context/ModalContext";
+import { useNavigate } from "react-router-dom";
 
 interface BetProps {
+    id: string;
     title: string;
     description: string;
     image: string;
@@ -19,12 +22,28 @@ export const PredictionMarkets: React.FC<BetProps> = ({
     totalPool,
     category,
     outcomes,
+    id,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
+    const { openModal } = useModal();
+    const navigate = useNavigate();
+
+    const handleOpenModal = (isLoader: boolean) => {
+        openModal(
+            <div className="flex flex-col justify-center items-center space-y-4">
+                <h2 className="text-lg font-semibold">Modal Title</h2>
+                <p className="mt-2">Modal content goes here</p>
+                {isLoader == true ? <div className="loader"></div> : ""}
+            </div>
+        );
+    };
 
     return (
-        <div className="flex flex-col justify-center items-start rounded-xl p-3 max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2">
+        <div
+            onClick={() => navigate(`/markets/${id}`)}
+            className="flex flex-col cursor-pointer justify-center items-start rounded-xl p-3 max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2"
+        >
             <section className="flex w-full justify-start items-center">
                 <p className="bg-white text-black rounded-full py-1 px-3 text-xs">
                     {category}
@@ -56,7 +75,12 @@ export const PredictionMarkets: React.FC<BetProps> = ({
                     <p className="flex flex-col items-center space-y-1">
                         <span className=" text-gray-200 ">Outcomes</span>
                         <span className="text-white flex justify-start space-x-2 font-bold">
-                            <button className="rounded-full px-3 py-1 bg-[#1f1f1f] text-sm">
+                            <button
+                                onClick={() => {
+                                    handleOpenModal(true);
+                                }}
+                                className="rounded-full px-3 py-1 bg-[#1f1f1f] text-sm"
+                            >
                                 Yes
                             </button>
                             <button className="rounded-full px-3 py-1 bg-[#1f1f1f] text-sm">
@@ -65,7 +89,12 @@ export const PredictionMarkets: React.FC<BetProps> = ({
                         </span>
                     </p>
                 </section>
-                <section className="w-full flex justify-center items-center relative">
+                <section
+                    className="w-full flex justify-center items-center relative"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                >
                     <div
                         className="w-full relative"
                         onClick={() => setIsOpen(!isOpen)}
@@ -110,7 +139,12 @@ export const PredictionMarkets: React.FC<BetProps> = ({
                         )}
                     </div>
                 </section>
-                <p className="mr-auto w-full">
+                <p
+                    className="mr-auto w-full"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                >
                     <button className="rounded-xl w-full mt-auto text-sm px-4 py-2 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90">
                         Place Bet
                     </button>
