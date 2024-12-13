@@ -153,31 +153,6 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
     }
 
-    /// @notice Resolves a market with the winning outcome determined by the oracle
-    /// @param _marketId The ID of the market to resolve
-    function resolveMarket(uint256 _marketId) external nonReentrant {
-        Market storage market = markets[_marketId];
-        if (!market.marketCreated) revert MarketNotCreated();
-        if (block.timestamp < market.resolutionDeadline) revert TooEarlyToResolve();
-        if (market.resolved) revert MarketAlreadyResolved();
-
-        // Validate the winning outcome exists
-        bool validOutcome = false;
-        for (uint256 i = 0; i < market.outcomes.length; i++) {
-            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(market.winningOutcome))) {
-                validOutcome = true;
-                break;
-            }
-        }
-        if (!validOutcome) revert InvalidOutcome();
-
-        // Update state variables
-        market.resolved = true;
-
-        // Emit event after state changes
-        emit MarketResolved(_marketId, market.winningOutcome);
-    }
-
     /// @notice Allows winners to claim their winnings from the resolved market
     /// @param _marketId The ID of the resolved market
     function claimWinnings(uint256 _marketId) external nonReentrant {
@@ -262,7 +237,95 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         emit MarketResolved(_marketId, _outcome);
     }
 
+    /// @notice Resolves a market with the winning outcome determined by the oracle
+    /// @param _marketId The ID of the market to resolve
+    function resolveMarket(uint256 _marketId) external nonReentrant {
+        // Check if the market exists and is in a resolvable state
+        Market storage market = markets[_marketId];
+        if (!market.marketCreated) revert MarketNotCreated();
+        if (block.timestamp < market.resolutionDeadline) revert TooEarlyToResolve();
+        if (market.resolved) revert MarketAlreadyResolved();
 
+        // If no outcome is set, trigger the oracle to resolve it (interaction)
+        if (bytes(market.winningOutcome).length == 0) {
+            oracle.resolveBet(_marketId, market.winningOutcome);
+        }
+
+        // Validate the winning outcome (check)
+        bool validOutcome = false;
+        for (uint256 i = 0; i < market.outcomes.length; i++) {
+            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(market.winningOutcome))) {
+                validOutcome = true;
+                break;
+            }
+        }
+        if (!validOutcome) revert InvalidOutcome();
+
+        // Update state variables (effect)
+        market.resolved = true;
+
+        // Emit the event (interaction)
+        emit MarketResolved(_marketId, market.winningOutcome);
+    }
+
+    
+    /// @notice Fetches all created markets 
+    /// @dev Returns arrays of market IDs and their corresponding details
+    function getAllMarkets() external view returns (
+    uint256[] memory marketIds,
+    string[] memory betTitles,
+    string[] memory descriptions,
+    uint256[] memory betDeadlines,
+    uint256[] memory resolutionDeadlines,
+    address[] memory creators,
+    bool[] memory resolved,
+    string[][] memory outcomes,
+    string[] memory winningOutcomes,
+    MarketCategory[] memory categories
+) {
+    uint256 total = marketCount;
+    if (total == 0) {
+        return (
+            new uint256[](0),
+            new string[](0),
+            new string[](0),
+            new uint256[](0),
+            new uint256[](0),
+            new address[](0),
+            new bool[](0),
+            new string[][](0),
+            new string[](0),
+            new MarketCategory[](0)
+        );
+    }
+    
+    marketIds = new uint256[](total);
+    betTitles = new string[](total);
+    descriptions = new string[](total);
+    betDeadlines = new uint256[](total);
+    resolutionDeadlines = new uint256[](total);
+    creators = new address[](total);
+    resolved = new bool[](total);
+    outcomes = new string[][](total);
+    winningOutcomes = new string[](total);
+    categories = new MarketCategory[](total);
+    
+    unchecked {
+        for (uint256 i; i < total; ++i) {
+            Market storage market = markets[i];
+            marketIds[i] = i;
+            betTitles[i] = market.betTitle;
+            descriptions[i] = market.description;
+            betDeadlines[i] = market.betDeadline;
+            resolutionDeadlines[i] = market.resolutionDeadline;
+            creators[i] = market.creator;
+            resolved[i] = market.resolved;
+            outcomes[i] = market.outcomes;
+            winningOutcomes[i] = market.winningOutcome;
+            categories[i] = market.category;
+        }
+    }
+    }
 
     /// @notice Fetches details about a specific market
     function getMarketInfo(uint256 _marketId) external view returns (
@@ -289,6 +352,9 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
             market.category
         );
     }
+
+
+    
 
     /// @notice Gets total bets placed on a specific outcome for a market
     function getMarketBets(uint256 _marketId, string memory _outcome) external view returns (uint256) {

@@ -793,6 +793,53 @@ contract NostradaoMarketTest is Test {
         
         assertEq(address(this).balance, initialBalance - MARKET_CREATION_FEE);
     }
+    function testResolveMarketComprehensive() public {
+    // Setup market
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final",
+        "Who will win?",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        NostradaoMarket.MarketCategory.SPORTS
+    );
+    
+    uint256 marketId = market.marketCount() - 1;
+    
+    // Test early resolution attempt
+    vm.expectRevert(NostradaoMarket.TooEarlyToResolve.selector);
+    market.resolveMarket(marketId);
+    
+    // Move past resolution deadline
+    vm.warp(block.timestamp + 2 days + 1);
+    
+    // Setup oracle permissions
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    
+    // Set winning outcome through oracle
+    vm.prank(owner);
+    oracle.resolveBet(marketId, "Team A");
+    
+    // Verify resolution
+    (,,,,,bool resolved,,string memory winningOutcome,) = market.getMarketInfo(marketId);
+    assertTrue(resolved);
+    assertEq(winningOutcome, "Team A");
+    
+    // Test double resolution attempt
+    vm.expectRevert(NostradaoMarket.MarketAlreadyResolved.selector);
+    market.resolveMarket(marketId);
+    
+    // Test non-existent market
+    vm.expectRevert(NostradaoMarket.MarketNotCreated.selector);
+    market.resolveMarket(999);
+    }
+
 
 
 

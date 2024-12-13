@@ -1,28 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "../src/NostradaoMarket.sol";
 import "../src/NostradaoBettingOracles.sol";
 
-contract DeployScript is Script {
-    address public bettingOracleAddress;
-    address public marketAddress;
+contract Deploy is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
-    function setUp() public {}
+        // Deploy Oracle first
+        NostradaoBettingOracle oracle = new NostradaoBettingOracle();
+        
+        // Deploy Market with Oracle address
+        NostradaoMarket market = new NostradaoMarket(address(oracle));
 
-    function run() public {
-        // Deploy the NostradaoBettingOracle contract
-        NostradaoBettingOracle bettingOracle = new NostradaoBettingOracle();
-        bettingOracleAddress = address(bettingOracle);
-        console.log("Deployed NostradaoBettingOracle at:", bettingOracleAddress);
+        // Set betting contract in Oracle
+        oracle.setBettingContract(address(market));
 
-        // Deploy the NostradaoMarket contract, passing in the betting oracle address
-        NostradaoMarket market = new NostradaoMarket(bettingOracleAddress);
-        marketAddress = address(market);
-        console.log("Deployed NostradaoMarket at:", marketAddress);
-
-        // Set the betting contract address in the oracle
-        bettingOracle.setBettingContract(marketAddress);
+        vm.stopBroadcast();
     }
 }
