@@ -1,4 +1,5 @@
 interface BetProps {
+    id: string;
     title: string;
     description: string;
     image: string;
@@ -8,38 +9,76 @@ interface BetProps {
     outcomes: string[];
 }
 
-const categories = [
-    "Crypto",
-    "Sports",
-    "Politics",
-    "Entertainment",
-    "Technology",
-];
-const cryptoTitles = [
-    "$BTC Price Prediction",
-    "Ethereum's Next Move",
-    "Altcoin Market Surge",
-    "Crypto Regulation Impact",
-    "Blockchain Breakthrough",
-];
-const descriptions = [
-    "Will it break all-time high?",
-    "Can it overcome current challenges?",
-    "Predicting the next big move",
-    "What's the future looking like?",
-    "Market-changing event incoming",
-    " Lorem, ipsum dolor sit amet consectetur adipisicing elit. Maiores officiis reiciendis rerum, distinctio reprehenderit asperiores repudiandae omnis accusantium illum id optio nihil earum cum sed quasi a cumque vel architecto.",
+export const PREDEFINED_MARKETS: BetProps[] = [
+    {
+        id: "0x1234567890123456789012345678901234567890",
+        title: "$BTC Price Prediction",
+        description: "Will Bitcoin break $100,000 by end of year?",
+        image: "", // Add image URL if available
+        deadline: Date.now() + 31536000000, // One year from now
+        totalPool: 500.25,
+        category: "Crypto",
+        outcomes: ["Yes", "No"],
+    },
+    {
+        id: "0x2345678901234567890123456789012345678901",
+        title: "Ethereum's Next Move",
+        description: "Will Ethereum transition to full proof-of-stake?",
+        image: "",
+        deadline: Date.now() + 15768000000, // Six months from now
+        totalPool: 750.5,
+        category: "Crypto",
+        outcomes: ["Yes", "No"],
+    },
+    {
+        id: "0x3456789012345678901234567890123456789012",
+        title: "AI Breakthrough of the Year",
+        description: "Will a major AI breakthrough happen in 2024?",
+        image: "",
+        deadline: Date.now() + 20736000000, // Eight months from now
+        totalPool: 1000.75,
+        category: "Technology",
+        outcomes: ["Yes", "No"],
+    },
+    {
+        id: "0x4567890123456789012345678901234567890123",
+        title: "World Cup Winner Prediction",
+        description:
+            "Which team will win the next major international tournament?",
+        image: "",
+        deadline: Date.now() + 10368000000, // Four months from now
+        totalPool: 250.1,
+        category: "Sports",
+        outcomes: ["Team A", "Team B"],
+    },
+    {
+        id: "0x5678901234567890123456789012345678901234",
+        title: "Next US Presidential Election",
+        description: "Who will win the presidential election?",
+        image: "",
+        deadline: Date.now() + 25920000000, // Ten months from now
+        totalPool: 2000.0,
+        category: "Politics",
+        outcomes: ["Candidate X", "Candidate Y"],
+    },
+    {
+        id: "0x6789012345678901234567890123456789012345",
+        title: "Blockbuster Movie of the Year",
+        description: "Which movie will gross the most in 2024?",
+        image: "",
+        deadline: Date.now() + 18144000000, // Seven months from now
+        totalPool: 350.75,
+        category: "Entertainment",
+        outcomes: ["Movie 1", "Movie 2"],
+    },
 ];
 
-export const generateRandomBets = (count: number = 3): BetProps[] => {
-    return Array.from({ length: count }, () => ({
-        title: cryptoTitles[Math.floor(Math.random() * cryptoTitles.length)],
-        description:
-            descriptions[Math.floor(Math.random() * descriptions.length)],
-        image: "", // You can add logic to generate or select random images if needed
-        deadline: Math.floor(Date.now() + Math.random() * 31536000000), // Random date within next year
-        totalPool: Number((Math.random() * 1000).toFixed(2)),
-        category: categories[Math.floor(Math.random() * categories.length)],
-        outcomes: ["Yes", "No"],
-    }));
+// Utility function to get a market by its ID
+export const getMarketById = (id: string) => {
+    return PREDEFINED_MARKETS.find((market) => market.id === id);
+};
+
+// Export a function to get a subset or all markets
+export const getMarkets = (count?: number) => {
+    return count ? PREDEFINED_MARKETS.slice(0, count) : PREDEFINED_MARKETS;
 };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaRegClock } from "react-icons/fa";
 
 interface BetProps {
+    id: string;
     title: string;
     description: string;
     image: string;
