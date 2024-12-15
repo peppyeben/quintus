@@ -12,7 +12,7 @@ contract Deploy is Script {
 
         // Deploy Oracle first
         NostradaoBettingOracle oracle = new NostradaoBettingOracle();
-        
+
         // Deploy Market with Oracle address
         NostradaoMarket market = new NostradaoMarket(address(oracle));
 
