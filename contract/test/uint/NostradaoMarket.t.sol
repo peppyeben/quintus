@@ -202,6 +202,48 @@ contract NostradaoMarketTest is Test {
         market.placeBet{value: 1 ether}(99, "Team A");
     }
 
+    function testExactWinningCalculations() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final 2026",
+        "Brazil vs Argentina",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        NostradaoMarket.MarketCategory.SPORTS
+    );
+
+    vm.prank(user1);
+    market.placeBet{value: 2 ether}(0, "Team A");
+    
+    vm.prank(user2);
+    market.placeBet{value: 3 ether}(0, "Team A");
+
+    uint256 user1BalanceBefore = user1.balance;
+    uint256 user2BalanceBefore = user2.balance;
+
+    vm.warp(block.timestamp + 2 days + 1);
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+
+    vm.prank(user1);
+    market.claimWinnings(0);
+    vm.prank(user2);
+    market.claimWinnings(0);
+
+    // User1 receives: 1.93 ETH + 0.02 ETH + 0.03 ETH (creator fees)
+    assertEq(user1.balance - user1BalanceBefore, 1.98 ether);
+    assertEq(user2.balance - user2BalanceBefore, 2.895 ether);
+    }
+
+
+
     function testComplexFeeDistribution() public {
         string[] memory outcomes = new string[](3);
         outcomes[0] = "A";

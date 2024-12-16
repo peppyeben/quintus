@@ -132,8 +132,8 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         if (block.timestamp >= market.betDeadline) revert BettingDeadlinePassed();
         if (msg.value == 0) revert BettingAmountCannotBeZero();
 
-        // Validate outcome
-        bool validOutcome;
+        // Explicitly initialize validOutcome
+        bool validOutcome = false;
         uint256 len = market.outcomes.length;
         for (uint256 i; i < len;) {
             if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(_outcome))) {
@@ -206,34 +206,6 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
     }
 
-    /// @notice Internal function to handle winnings transfer
-    /// @param creator The address of the market creator
-    /// @param winnings The total amount of winnings to distribute
-    function _transferWinnings(address creator, uint256 winnings) private {
-        // Calculate fees
-        uint256 platformFee = (winnings * PLATFORM_FEE) / 1000; // 2.5% platform fee
-        uint256 creatorFee = (winnings * CREATOR_FEE) / 1000; // 1% creator fee
-        uint256 finalWinnings = winnings - platformFee - creatorFee;
-
-        // Transfer platform fee to the owner
-        if (platformFee > 0) {
-            (bool platformSuccess,) = owner().call{value: platformFee}("");
-            if (!platformSuccess) revert TransferFailed();
-        }
-
-        // Transfer creator fee to the market creator
-        if (creatorFee > 0) {
-            (bool creatorSuccess,) = creator.call{value: creatorFee}("");
-            if (!creatorSuccess) revert TransferFailed();
-        }
-
-        // Transfer final winnings to the user
-        if (finalWinnings > 0) {
-            (bool userSuccess,) = msg.sender.call{value: finalWinnings}("");
-            if (!userSuccess) revert TransferFailed();
-        }
-    }
-
     /// @notice Resolves a bet with the winning outcome from the oracle
     /// @param _marketId The ID of the market to resolve
     /// @param _outcome The winning outcome
@@ -248,18 +220,21 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     /// @notice Resolves a market with the winning outcome determined by the oracle
     /// @param _marketId The ID of the market to resolve
     function resolveMarket(uint256 _marketId) external nonReentrant {
-        // Check if the market exists and is in a resolvable state
+        // Check market state first
         Market storage market = markets[_marketId];
         if (!market.marketCreated) revert MarketNotCreated();
         if (block.timestamp < market.resolutionDeadline) revert TooEarlyToResolve();
         if (market.resolved) revert MarketAlreadyResolved();
 
-        // If no outcome is set, trigger the oracle to resolve it (interaction)
+        // Effects: Update state before external interactions
+        market.resolved = true;
+
+        // Interaction: Call oracle to resolve if no outcome is set
         if (bytes(market.winningOutcome).length == 0) {
             oracle.resolveBet(_marketId, market.winningOutcome);
         }
 
-        // Validate the winning outcome (check)
+        // Validate the winning outcome
         bool validOutcome = false;
         for (uint256 i = 0; i < market.outcomes.length; i++) {
             if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(market.winningOutcome))) {
@@ -269,13 +244,9 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
         }
         if (!validOutcome) revert InvalidOutcome();
 
-        // Update state variables (effect)
-        market.resolved = true;
-
-        // Emit the event (interaction)
+        // Emit event at the end
         emit MarketResolved(_marketId, market.winningOutcome);
     }
-
     /// @notice Fetches all created markets
     /// @dev Returns arrays of market IDs and their corresponding details
     function getAllMarkets()
@@ -372,4 +343,6 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     function getMarketBets(uint256 _marketId, string memory _outcome) external view returns (uint256) {
         return markets[_marketId].totalBets[_outcome];
     }
+
+    
 }

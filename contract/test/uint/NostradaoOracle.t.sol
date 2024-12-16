@@ -80,7 +80,6 @@ contract NostradaoBettingOracleTest is Test {
 
     function testResolutionWithoutContract() public {
         vm.startPrank(authorizedWallet1);
-        oracle.setBettingContract(address(0));
         
         vm.expectRevert(NostradaoBettingOracle.BettingContractNotSet.selector);
         oracle.resolveBet(1, "Team A");
