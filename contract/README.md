@@ -105,7 +105,6 @@ function reolveBet(
  ```solidity
 forge install
 ```
-
 3. Run tests:
  ```solidity
 forge test
