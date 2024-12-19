@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/NostradaoMarket.sol";
-import "../../src/NostradaoBettingOracles.sol";
+import "../../src/QuintusOracles.sol";
+import "../../src/QuintusMarket.sol";
 
-contract NostradaoIntegrationTest is Test {
-    NostradaoMarket public market;
-    NostradaoBettingOracle public oracle;
+contract QuintusIntegrationTest is Test {
+    QuintusMarket public market;
+    QuintusOracles public oracle;
     address public owner;
     address public user1;
     address public user2;
@@ -27,8 +27,8 @@ contract NostradaoIntegrationTest is Test {
         vm.deal(user3, 100 ether);
         vm.deal(user4, 100 ether);
 
-        oracle = new NostradaoBettingOracle();
-        market = new NostradaoMarket(address(oracle));
+        oracle = new QuintusOracles();
+        market = new QuintusMarket(address(oracle));
         oracle.setBettingContract(address(market));
     }
 
@@ -46,7 +46,7 @@ contract NostradaoIntegrationTest is Test {
             block.timestamp - 1,
             block.timestamp + 1,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         // Test insufficient fee
@@ -58,7 +58,7 @@ contract NostradaoIntegrationTest is Test {
             block.timestamp + 1 days,
             block.timestamp + 2 days,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
     }
 
@@ -129,7 +129,7 @@ contract NostradaoIntegrationTest is Test {
         string[] memory outcomes = new string[](2);
         outcomes[0] = "Team A";
         outcomes[1] = "Team B";
-        return createMarket("Sports", NostradaoMarket.MarketCategory.SPORTS, outcomes);
+        return createMarket("Sports", QuintusMarket.MarketCategory.SPORTS, outcomes);
     }
 
     function createCryptoMarket() internal returns (uint256) {
@@ -137,14 +137,14 @@ contract NostradaoIntegrationTest is Test {
         outcomes[0] = "Bull";
         outcomes[1] = "Bear";
         outcomes[2] = "Neutral";
-        return createMarket("Crypto", NostradaoMarket.MarketCategory.CRYPTO, outcomes);
+        return createMarket("Crypto", QuintusMarket.MarketCategory.CRYPTO, outcomes);
     }
 
     function createPoliticsMarket() internal returns (uint256) {
         string[] memory outcomes = new string[](2);
         outcomes[0] = "Yes";
         outcomes[1] = "No";
-        return createMarket("Politics", NostradaoMarket.MarketCategory.POLITICS, outcomes);
+        return createMarket("Politics", QuintusMarket.MarketCategory.POLITICS, outcomes);
     }
 
     function createElectionMarket() internal returns (uint256) {
@@ -153,7 +153,7 @@ contract NostradaoIntegrationTest is Test {
         outcomes[1] = "Candidate B";
         outcomes[2] = "Candidate C";
         outcomes[3] = "Candidate D";
-        return createMarket("Election", NostradaoMarket.MarketCategory.ELECTION, outcomes);
+        return createMarket("Election", QuintusMarket.MarketCategory.ELECTION, outcomes);
     }
 
     function placeDiversifiedBets(uint256[] memory marketIds) internal {
@@ -194,7 +194,7 @@ contract NostradaoIntegrationTest is Test {
 
         function createMarket(
         string memory category, 
-        NostradaoMarket.MarketCategory marketCategory, 
+        QuintusMarket.MarketCategory marketCategory, 
         string[] memory outcomes
     ) internal returns (uint256) {
         vm.prank(user1);

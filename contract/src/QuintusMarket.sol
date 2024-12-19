@@ -3,12 +3,12 @@ pragma solidity ^0.8.20;
 
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "./NostradaoBettingOracles.sol";
+import "./QuintusOracles.sol";
 
-/// @title NostradaoMarket - A decentralized prediction market platform
+/// @title QuintusMarket - A decentralized prediction market platform
 /// @notice This contract allows users to create and participate in prediction markets
 /// @dev Implements reentrancy protection and ownership mechanisms
-contract NostradaoMarket is Ownable, ReentrancyGuard {
+contract QuintusMarket is Ownable, ReentrancyGuard {
     // Market categories to organize different types of prediction markets
     enum MarketCategory {
         SPORTS,
@@ -55,7 +55,7 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     uint256 public constant PLATFORM_FEE = 25; // 2.5% platform fee
     uint256 public constant CREATOR_FEE = 10; // 1% creator fee
     uint256 public constant MARKET_CREATION_FEE = 0.01 ether; // Fee to create a new market (in BNB)
-    NostradaoBettingOracle public immutable oracle; // Oracle contract reference for market resolution
+    QuintusOracles public immutable oracle; // Oracle contract reference for market resolution
 
     // Mappings
     mapping(uint256 => Market) public markets; // Market ID to Market data
@@ -87,7 +87,7 @@ contract NostradaoMarket is Ownable, ReentrancyGuard {
     /// @notice Contract constructor
     /// @param _oracle Address of the oracle contract for fetching winning outcomes
     constructor(address _oracle) Ownable(msg.sender) {
-        oracle = NostradaoBettingOracle(_oracle);
+        oracle = QuintusOracles(_oracle);
     }
 
     /// @notice Creates a new prediction market (bet)

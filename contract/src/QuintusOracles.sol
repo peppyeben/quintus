@@ -10,10 +10,10 @@ interface IBetMarket {
     function resolveBet(uint256 _marketId, string memory _outcome) external;
 }
 
-/// @title NostradaoBettingOracle
+/// @title QuintusOracles
 /// @notice Oracle contract that manages bet resolutions and authorized wallets
 /// @dev Acts as a trusted oracle for determining betting outcomes
-contract NostradaoBettingOracle {
+contract QuintusOracles {
     // State Variables
     /// @notice Address of the betting contract that this oracle reports to
     address public bettingContract;

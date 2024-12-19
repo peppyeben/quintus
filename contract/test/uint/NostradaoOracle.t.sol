@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/NostradaoMarket.sol";
-import "../../src/NostradaoBettingOracles.sol";
+import "../../src/QuintusMarket.sol";
+import "../../src/QuintusOracles.sol";
 
-contract NostradaoBettingOracleTest is Test {
-    NostradaoBettingOracle public oracle;
-    NostradaoMarket public market;
+contract QuintusOraclesTest is Test {
+    QuintusOracles public oracle;
+    QuintusMarket public market;
     address public authorizedWallet1;
     address public authorizedWallet2;
     address public unauthorizedWallet;
@@ -24,8 +24,8 @@ contract NostradaoBettingOracleTest is Test {
         unauthorizedWallet = makeAddr("unauthorized");
         
         vm.prank(authorizedWallet1);
-        oracle = new NostradaoBettingOracle();
-        market = new NostradaoMarket(address(oracle));
+        oracle = new QuintusOracles();
+        market = new QuintusMarket(address(oracle));
     }
 
     function testCompleteOracleLifecycle() public {
@@ -56,13 +56,13 @@ contract NostradaoBettingOracleTest is Test {
     function testUnauthorizedAccess() public {
         vm.startPrank(unauthorizedWallet);
         
-        vm.expectRevert(NostradaoBettingOracle.NotAuthorized.selector);
+        vm.expectRevert(QuintusOracles.NotAuthorized.selector);
         oracle.setBettingContract(address(market));
 
-        vm.expectRevert(NostradaoBettingOracle.NotAuthorized.selector);
+        vm.expectRevert(QuintusOracles.NotAuthorized.selector);
         oracle.resolveBet(0, "Team A");
 
-        vm.expectRevert(NostradaoBettingOracle.NotAuthorized.selector);
+        vm.expectRevert(QuintusOracles.NotAuthorized.selector);
         oracle.addAuthorizedWallet(unauthorizedWallet);
         
         vm.stopPrank();
@@ -73,7 +73,7 @@ contract NostradaoBettingOracleTest is Test {
         oracle.setBettingContract(address(market));
         oracle.resolveBet(0, "Team A");
         
-        vm.expectRevert(NostradaoBettingOracle.BetMarketAlreadyResolved.selector);
+        vm.expectRevert(QuintusOracles.BetMarketAlreadyResolved.selector);
         oracle.resolveBet(0, "Team B");
         vm.stopPrank();
     }
@@ -81,7 +81,7 @@ contract NostradaoBettingOracleTest is Test {
     function testResolutionWithoutContract() public {
         vm.startPrank(authorizedWallet1);
         
-        vm.expectRevert(NostradaoBettingOracle.BettingContractNotSet.selector);
+        vm.expectRevert(QuintusOracles.BettingContractNotSet.selector);
         oracle.resolveBet(1, "Team A");
         vm.stopPrank();
     }

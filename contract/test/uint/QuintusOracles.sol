@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/NostradaoMarket.sol";
-import "../../src/NostradaoBettingOracles.sol";
+import "../../src/QuintusMarket.sol";
+import "../../src/QuintusOracles.sol";
 
-contract NostradaoMarketTest is Test {
-    NostradaoMarket public market;
-    NostradaoBettingOracle public oracle;
+contract QuintusMarketTest is Test {
+    QuintusMarket public market;
+    QuintusOracles public oracle;
     address public owner;
     address public user1;
     address public user2;
@@ -19,8 +19,8 @@ contract NostradaoMarketTest is Test {
         user2 = makeAddr("user2");
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);
-        oracle = new NostradaoBettingOracle();
-        market = new NostradaoMarket(address(oracle));
+        oracle = new QuintusOracles();
+        market = new QuintusMarket(address(oracle));
     }
 
     receive() external payable {}
@@ -42,7 +42,7 @@ contract NostradaoMarketTest is Test {
             betDeadline,
             resolutionDeadline,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         // Verify market creation
@@ -94,7 +94,7 @@ contract NostradaoMarketTest is Test {
             block.timestamp - 1,
             block.timestamp + 1,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         // Create valid market for subsequent tests
@@ -108,7 +108,7 @@ contract NostradaoMarketTest is Test {
             betDeadline,
             resolutionDeadline,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         // Test invalid bet scenarios
@@ -138,7 +138,7 @@ contract NostradaoMarketTest is Test {
             block.timestamp + 1 days,
             block.timestamp + 2 days,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         uint256 betAmount = 10 ether;
@@ -183,7 +183,7 @@ contract NostradaoMarketTest is Test {
             block.timestamp + 1 days,
             block.timestamp + 2 days,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         // Test invalid outcome
@@ -214,7 +214,7 @@ contract NostradaoMarketTest is Test {
         block.timestamp + 1 days,
         block.timestamp + 2 days,
         outcomes,
-        NostradaoMarket.MarketCategory.SPORTS
+        QuintusMarket.MarketCategory.SPORTS
     );
 
     vm.prank(user1);
@@ -257,7 +257,7 @@ contract NostradaoMarketTest is Test {
             block.timestamp + 1 days,
             block.timestamp + 2 days,
             outcomes,
-            NostradaoMarket.MarketCategory.SPORTS
+            QuintusMarket.MarketCategory.SPORTS
         );
 
         uint256 betAmount = 10 ether;
