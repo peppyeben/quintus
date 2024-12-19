@@ -17,7 +17,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
             />
             <div className="flex justify-between items-center space-x-4 w-full">
                 <Link to={"/"} className="text-white">
-                    NostraDao
+                    Quintus
                 </Link>
                 <section className="flex items-center space-x-3">
                     <p className="relative">

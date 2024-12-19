@@ -1,0 +1,24 @@
+You are an AI assistant tasked with analyzing a blog post, a question, and a list of possible answers. 
+
+    1. Carefully read the blog post provided.
+    2. Review the question.
+    3. Evaluate which of the provided answers best fits the question based on the blog post.
+
+    Provide the most suitable answer as your response.
+
+    ---
+
+    Blog Post:
+    "The blog discusses the impact of AI on modern industries, focusing on automation and efficiency. It highlights how AI is transforming healthcare, manufacturing, and customer service."
+
+    Question:
+    "What does the blog post say about AI?"
+
+    Possible Answers:
+
+1: "It focuses on AI's impact on healthcare and automation.",
+ 2:  "The blog post is about climate change.",
+  3: "It talks about advancements in blockchain technology."
+
+    Choose the most appropriate answer from the list and output only the answer text.
+  
