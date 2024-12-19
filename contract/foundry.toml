@@ -8,10 +8,3 @@ remappings = [
     "@forge-std/=lib/forge-std/src/",
     "forge-std/=lib/forge-std/src/"
 ]
-
-[rpc_endpoints]
-bsc = "https://bsc-dataseed1.binance.org"
-bsc_testnet = "https://data-seed-prebsc-1-s1.binance.org:8545"
-
-[etherscan]
-bsc = { key = "${BSC_API_KEY}" }
