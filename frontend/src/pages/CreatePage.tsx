@@ -178,7 +178,7 @@ export const CreatePage: React.FC = () => {
                 message: "Market created successfully",
                 type: "success",
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Market Creation Error:", error);
 
             openModal({

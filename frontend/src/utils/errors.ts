@@ -33,7 +33,7 @@ export interface TranslatedError {
     technicalMessage?: string;
 }
 
-export const translateError = (error: any): TranslatedError => {
+export const translateError = (error: unknown): TranslatedError => {
     // User Rejection Errors
     const userRejectionPatterns = [
         'user rejected',
@@ -181,7 +181,7 @@ export const logError = (error: TranslatedError) => {
 };
 
 // Example usage in a try-catch block
-export const handleContractError = (error: any, openModal?: (options: { message: string, type: 'error' | 'warning' }) => void) => {
+export const handleContractError = (error: unknown, openModal?: (options: { message: string, type: 'error' | 'warning' }) => void) => {
     const translatedError = translateError(error);
     
     // Optionally log the error
