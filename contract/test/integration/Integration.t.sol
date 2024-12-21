@@ -167,12 +167,12 @@ contract QuintusIntegrationTest is Test {
     }
 
     function getFirstOutcome(uint256 marketId) internal view returns (string memory) {
-        (,,,,,, string[] memory outcomes,,) = market.getMarketInfo(marketId);
+        (,,,,,, string[] memory outcomes,,,) = market.getMarketInfo(marketId);
         return outcomes[0];
     }
 
     function getSecondOutcome(uint256 marketId) internal view returns (string memory) {
-        (,,,,,, string[] memory outcomes,,) = market.getMarketInfo(marketId);
+        (,,,,,, string[] memory outcomes,,,) = market.getMarketInfo(marketId);
         return outcomes[1];
     }
 
@@ -186,7 +186,7 @@ contract QuintusIntegrationTest is Test {
 
     function verifyMarketResolutions(uint256[] memory marketIds) internal {
         for (uint256 i = 0; i < marketIds.length; i++) {
-            (,,,,, bool resolved,, string memory outcome,) = market.getMarketInfo(marketIds[i]);
+            (,,,,, bool resolved,,, string memory outcome,) = market.getMarketInfo(marketIds[i]);
             assertTrue(resolved);
             assertEq(outcome, getFirstOutcome(marketIds[i]));
         }

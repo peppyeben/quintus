@@ -261,6 +261,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
             address[] memory creators,
             bool[] memory resolved,
             string[][] memory outcomes,
+            uint256 totalPool,
             string[] memory winningOutcomes,
             MarketCategory[] memory categories
         )
@@ -276,6 +277,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
                 new address[](0),
                 new bool[](0),
                 new string[][](0),
+                0,
                 new string[](0),
                 new MarketCategory[](0)
             );
@@ -321,8 +323,10 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
             address creator,
             bool resolved,
             string[] memory outcomes,
+            uint256 totalPool,
             string memory winningOutcome,
             MarketCategory category
+            
         )
     {
         Market storage market = markets[_marketId];
@@ -334,15 +338,38 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
             market.creator,
             market.resolved,
             market.outcomes,
+            0,
             market.winningOutcome,
             market.category
+    
         );
     }
-
+    
     /// @notice Gets total bets placed on a specific outcome for a market
-    function getMarketBets(uint256 _marketId, string memory _outcome) external view returns (uint256) {
-        return markets[_marketId].totalBets[_outcome];
+    /// @param _marketId The ID of the market
+    /// @param _outcome The outcome for which to fetch bets
+    /// @return totalBetsForOutcome Total bets placed for the specified outcome
+    /// @return outcomeWeight The weight of the bets for this outcome as a percentage of the total pool
+    function getMarketBets(uint256 _marketId, string memory _outcome) 
+        external 
+        view 
+        returns (uint256 totalBetsForOutcome, uint256 outcomeWeight) 
+    {
+        // Access the market storage
+        Market storage market = markets[_marketId];
+
+        // Fetch total bets for the specified outcome
+        totalBetsForOutcome = market.totalBets[_outcome];
+
+        // Calculate outcome weight as a percentage of the total pool
+        if (market.totalPool > 0) {
+            outcomeWeight = (totalBetsForOutcome * 100) / market.totalPool;
+        } else {
+            outcomeWeight = 0; // Default to 0 if there is no pool
+        }
+
+        return (totalBetsForOutcome, outcomeWeight);
     }
 
-    
+        
 }

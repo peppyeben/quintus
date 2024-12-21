@@ -55,9 +55,13 @@ contract QuintusMarketTest is Test {
         vm.prank(user2);
         market.placeBet{value: 3 ether}(0, "Team B");
         
-        // Verify bet amounts
-        assertEq(market.getMarketBets(0, "Team A"), 2 ether);
-        assertEq(market.getMarketBets(0, "Team B"), 3 ether);
+       // Verify bet amounts
+    (uint256 totalBetsA, ) = market.getMarketBets(0, "Team A");
+    assertEq(totalBetsA, 2 ether);
+
+    (uint256 totalBetsB, ) = market.getMarketBets(0, "Team B"); 
+    assertEq(totalBetsB, 3 ether);
+
 
         // Market Resolution
         vm.warp(betDeadline + 1);
@@ -69,7 +73,7 @@ contract QuintusMarketTest is Test {
         oracle.resolveBet(0, "Team A");
 
         // Verify resolution
-        (,,,,, bool resolved,, string memory winningOutcome,) = market.getMarketInfo(0);
+        (,,,,, bool resolved,,, string memory winningOutcome,) = market.getMarketInfo(0);
         assertTrue(resolved);
         assertEq(winningOutcome, "Team A");
 
@@ -282,5 +286,68 @@ contract QuintusMarketTest is Test {
         assertEq(owner.balance - ownerBalanceBefore, platformFee);
         assertEq(user1.balance - creatorBalanceBefore, creatorFee);
     }
+
+    function testGetMarketBets() public {
+    // Setup market parameters
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "YES";
+    outcomes[1] = "NO";
+    
+    // Create market with all required parameters
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Test Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Place bets
+    vm.deal(address(this), 100 ether);
+    market.placeBet{value: 60 ether}(0, "YES");
+    
+    vm.prank(address(0x1));
+    vm.deal(address(0x1), 40 ether);
+    market.placeBet{value: 40 ether}(0, "YES");
+
+    // Test getting market bets
+    (uint256 totalBets, uint256 weight) = market.getMarketBets(0, "YES");
+    
+    // Assertions
+    assertEq(totalBets, 100 ether, "Total bets should be 100 ether");
+    assertEq(weight, 100, "Weight should be 100%");
+    }
+
+    function testGetMarketBetsWithMultipleOutcomes() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "YES";
+        outcomes[1] = "NO";
+        
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "Test Market",
+            "Test Description",
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            outcomes,
+            QuintusMarket.MarketCategory.SPORTS
+        );
+        
+        vm.deal(address(this), 75 ether);
+        market.placeBet{value: 75 ether}(0, "YES");
+        
+        vm.prank(address(0x1));
+        vm.deal(address(0x1), 25 ether);
+        market.placeBet{value: 25 ether}(0, "NO");
+
+        (uint256 yesBets, uint256 yesWeight) = market.getMarketBets(0, "YES");
+        assertEq(yesBets, 75 ether, "YES bets should be 75 ether");
+        assertEq(yesWeight, 75, "YES weight should be 75%");
+
+        (uint256 noBets, uint256 noWeight) = market.getMarketBets(0, "NO");
+        assertEq(noBets, 25 ether, "NO bets should be 25 ether");
+        assertEq(noWeight, 25, "NO weight should be 25%");
+    }
+
 
 }
