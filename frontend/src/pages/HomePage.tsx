@@ -1,12 +1,31 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { FeaturedCard } from "../components/FeaturedCard";
 import { PredictionMarkets } from "../components/PredictionMarkets";
-import { useMarkets } from "@/hooks/useMarkets";
+// import { useMarkets } from "@/hooks/useMarkets";
 import { Loader } from "lucide-react";
+import { useMarkets } from "@/context/MarketsContext";
 
 export const HomePage: React.FC = () => {
-    const { markets, isLoading, error } = useMarkets();
+    const { markets, isLoading, error, filteredMarkets } = useMarkets();
+
+    // Randomly select 3 markets
+    const displayMarkets = useMemo(() => {
+        // If less than or equal to 3 markets, return all
+        if (markets.length <= 3) return markets;
+
+        // Create a copy of markets to shuffle
+        const shuffled = [...markets];
+
+        // Fisher-Yates shuffle algorithm
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        // Return first 3 after shuffling
+        return shuffled.slice(0, 3);
+    }, [markets]);
 
     if (isLoading) {
         return (
@@ -49,8 +68,8 @@ export const HomePage: React.FC = () => {
                 animate={{ opacity: 1 }}
                 className="py-8 px-6 grid grid-cols-auto-fit gap-4 w-full mx-auto"
             >
-                {markets.map((bet, index) => (
-                    <FeaturedCard key={bet.id || index} {...bet} />
+                {displayMarkets.map((bet) => (
+                    <FeaturedCard key={bet.id} {...bet} />
                 ))}
             </motion.div>
             <motion.div className="flex flex-col justify-start space-y-4 py-4 w-full px-6">
@@ -58,11 +77,13 @@ export const HomePage: React.FC = () => {
                     Prediction Markets
                 </p>
                 <div className="grid grid-cols-auto-fit w-full gap-4">
-                    {markets.map((bet, index) => (
-                        <PredictionMarkets key={bet.id || index} {...bet} />
+                    {filteredMarkets.map((bet) => (
+                        <PredictionMarkets key={bet.id} {...bet} />
                     ))}
                 </div>
             </motion.div>
         </motion.div>
     );
 };
+
+export default HomePage;

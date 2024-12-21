@@ -4,12 +4,12 @@ import { useParams } from "react-router-dom";
 import { FaRegClock } from "react-icons/fa";
 import { TbBrandBinance } from "react-icons/tb";
 import { ChevronDown } from "lucide-react";
-import { useMarkets } from "@/hooks/useMarkets";
 import { MARKET_CATEGORY } from "@/utils/util";
 import { handleContractError } from "@/utils/errors";
 import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { parseEther } from "ethers";
+import { useMarkets } from "@/context/MarketsContext";
 
 export const MarketDetailsPage: React.FC = () => {
     const { markets, isLoading, error } = useMarkets();

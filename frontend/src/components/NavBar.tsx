@@ -3,6 +3,8 @@ import { FaBars, FaPlus, FaSearch } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { WalletWrapper } from "./Wallet";
 import QuintusImage from "../assets/quintus.png";
+import { useMarkets } from "@/context/MarketsContext";
+// import { useMarkets } from "@/hooks/useMarkets";
 
 // Define the props type for Navbar
 type NavbarProps = {
@@ -11,6 +13,8 @@ type NavbarProps = {
 
 const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
     const navigate = useNavigate();
+
+    const { searchTerm, setSearchTerm } = useMarkets();
 
     return (
         <nav className="bg-black w-full shadow-md py-4 px-6 flex justify-between items-center space-x-4">
@@ -35,7 +39,9 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
                     <p className="relative">
                         <input
                             type="text"
-                            className="rounded-full outline-none border-none appearance-none px-4 py-2 bg-[#0d0d0d] text-white"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="rounded-full outline-none border-none w-[15rem] placeholder:text-sm appearance-none px-4 py-2 bg-[#0d0d0d] text-white"
                             placeholder="Search Markets"
                         />
                         <span className="absolute right-3 top-[25%] rounded-xl bg-[#1f1f1f] cursor-pointer">

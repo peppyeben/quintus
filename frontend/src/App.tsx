@@ -11,6 +11,7 @@ import { CreatePage } from "./pages/CreatePage";
 import { LoaderProvider } from "./context/LoaderContext";
 import { MarketDetailsPage } from "./pages/MarketDetailsPage";
 import { CustomModalProvider } from "./context/CustomModalContext";
+import { MarketsProvider } from "./context/MarketsContext";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -21,30 +22,38 @@ function App() {
 
     return (
         <div className="w-[100vw] bg-black">
-            <LoaderProvider>
-                <CustomModalProvider>
-                    <AnimatePresence>
-                        <Sidebar
-                            isOpen={isSidebarOpen}
-                            onClose={() => setIsSidebarOpen(false)}
-                        />
-                    </AnimatePresence>
-                    <Navbar onMobileMenuToggle={toggleMobileMenu} />
-                    <div className="min-h-screen flex flex-col">
-                        <Routes>
-                            <Route path="/" element={<HomePage />} />
-                            <Route path="/markets" element={<MarketsPage />} />
-                            <Route
-                                path="/markets/:id"
-                                element={<MarketDetailsPage />}
+            <MarketsProvider>
+                <LoaderProvider>
+                    <CustomModalProvider>
+                        <AnimatePresence>
+                            <Sidebar
+                                isOpen={isSidebarOpen}
+                                onClose={() => setIsSidebarOpen(false)}
                             />
+                        </AnimatePresence>
+                        <Navbar onMobileMenuToggle={toggleMobileMenu} />
+                        <div className="min-h-screen flex flex-col">
+                            <Routes>
+                                <Route path="/" element={<HomePage />} />
+                                <Route
+                                    path="/markets"
+                                    element={<MarketsPage />}
+                                />
+                                <Route
+                                    path="/markets/:id"
+                                    element={<MarketDetailsPage />}
+                                />
 
-                            <Route path="/bets" element={<MyBetsPage />} />
-                            <Route path="/create" element={<CreatePage />} />
-                        </Routes>
-                    </div>
-                </CustomModalProvider>
-            </LoaderProvider>
+                                <Route path="/bets" element={<MyBetsPage />} />
+                                <Route
+                                    path="/create"
+                                    element={<CreatePage />}
+                                />
+                            </Routes>
+                        </div>
+                    </CustomModalProvider>
+                </LoaderProvider>
+            </MarketsProvider>
         </div>
     );
 }
