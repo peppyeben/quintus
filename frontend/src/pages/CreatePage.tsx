@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, ImagePlus, X, Plus } from "lucide-react";
+import { ChevronDown, X, Plus } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,14 +22,16 @@ import TimePicker from "react-time-picker";
 import "react-day-picker/dist/style.css";
 import "react-time-picker/dist/TimePicker.css";
 
+import { useWriteContract, useAccount } from "wagmi";
+import { BET_ABI } from "@/utils/bet-abi";
+import { MARKET_CATEGORY } from "@/utils/util";
+import { useLoader } from "@/context/LoaderContext";
+import { useCustomModal } from "@/context/CustomModalContext";
+import { handleContractError } from "@/utils/errors";
+import { parseEther } from "ethers";
+
 // Categories for market
-const CATEGORIES = [
-    "Crypto",
-    "Sports",
-    "Politics",
-    "Entertainment",
-    "Technology",
-];
+const CATEGORIES = ["Sports", "Crypto", "Politics", "Election", "Others"];
 
 // Form validation schema
 const marketSchema = z
@@ -43,16 +45,6 @@ const marketSchema = z
             .trim()
             .min(10, "Description must be at least 10 characters"),
         category: z.enum(CATEGORIES as [string, ...string[]]),
-        thumbnail: z
-            .instanceof(File)
-            .optional()
-            .refine(
-                (file) => {
-                    if (!file) return true; // Optional, so no file is also valid
-                    return file.size <= 1 * 1024 * 1024; // 1MB in bytes
-                },
-                { message: "Image must be less than 1MB" }
-            ),
         outcomes: z
             .array(
                 z.object({
@@ -70,28 +62,6 @@ const marketSchema = z
             { message: "Bet deadline must be at least 10 minutes from now" }
         ),
         resolutionDeadline: z.date(),
-        betFee: z
-            .object({
-                type: z.enum(["fixed", "dynamic"]),
-                value: z.number().min(0.0025, "Fee must be at least 0.0025"), // Updated minimum value
-                minValue: z.number().optional(),
-                maxValue: z.number().optional(),
-            })
-            .refine(
-                (data) => {
-                    if (data.type === "dynamic") {
-                        return (
-                            data.maxValue !== undefined &&
-                            data.maxValue > (data.minValue ?? data.value)
-                        );
-                    }
-                    return true;
-                },
-                {
-                    message: "Max value must be greater than min value",
-                    path: ["maxValue"],
-                }
-            ),
     })
     .refine(
         (data) => {
@@ -105,7 +75,7 @@ const marketSchema = z
         {
             message:
                 "Resolution deadline must be at least 1 hour after bet deadline",
-            path: ["resolutionDeadline"], // This specifies which field the error is associated with
+            path: ["resolutionDeadline"],
         }
     );
 
@@ -113,79 +83,115 @@ type MarketFormData = z.infer<typeof marketSchema>;
 
 export const CreatePage: React.FC = () => {
     const [categoryOpen, setCategoryOpen] = useState(false);
-    const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
-        null
-    );
-    const [outcomes, setOutcomes] = useState([
-        { name: "", probability: undefined },
-        { name: "", probability: undefined },
-    ]);
+    const [outcomes, setOutcomes] = useState([{ name: "" }, { name: "" }]);
     const [time, setTime] = useState<Date | null>(new Date());
+
+    const { writeContractAsync } = useWriteContract();
+    const { openModal } = useCustomModal();
+    const { showLoader, hideLoader } = useLoader();
+    const account = useAccount();
 
     const {
         control,
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, isSubmitting },
         setValue,
         trigger,
         clearErrors,
-        setError,
     } = useForm<MarketFormData>({
         resolver: zodResolver(marketSchema),
-        mode: "onChange", // Validate on every change
+        mode: "onChange",
         defaultValues: {
-            outcomes: [
-                { name: "", probability: undefined },
-                { name: "", probability: undefined },
-            ],
-            betFee: { type: "fixed", value: 0 },
+            outcomes: [{ name: "" }, { name: "" }],
         },
     });
 
-    const onSubmit = (data: MarketFormData) => {
-        // Perform validation manually
+    // Log any errors for debugging
+    useEffect(() => {
         if (Object.keys(errors).length > 0) {
-            // If there are errors, prevent submission
-            console.log(errors);
+            console.error("Form Validation Errors:", errors);
+        }
+    }, [errors]);
+
+    const onSubmit = async (data: MarketFormData) => {
+        console.log("Submitting form data:", data);
+
+        // Prepare market category
+        const mktCatLw = MARKET_CATEGORY.map((c) => String(c).toLowerCase());
+        const selectedCategory = mktCatLw.indexOf(
+            String(data.category).toLowerCase()
+        );
+
+        // Wallet connection check
+        if (!account.isConnected) {
+            openModal({
+                message: "Sign in to Create Market",
+                type: "warning",
+            });
             return;
         }
 
-        console.log("Form Data:", data);
-        // Add your submission logic here
-    };
+        const marketArgs = [
+            data.marketTitle,
+            data.description,
+            new Date(data.betDeadline).getTime() / 1000,
+            new Date(data.resolutionDeadline).getTime() / 1000,
+            data.outcomes.map((c) => c.name),
+            selectedCategory,
+        ];
 
-    const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 1 * 1024 * 1024) {
-                // File is larger than 1MB
-                setValue("thumbnail", undefined);
-                setThumbnailPreview(null);
+        const marketCreationFee = parseEther("0.01");
 
-                // Ensure the error is set correctly
-                setError("thumbnail", {
-                    type: "manual",
-                    message: "Image must be less than 1MB",
-                });
+        // console.log(marketArgs);
+        // console.log(marketCreationFee);
+        // return
 
-                e.target.value = ""; // Clear the file input
-                return;
-            }
+        try {
+            showLoader();
 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setThumbnailPreview(reader.result as string);
-                setValue("thumbnail", file);
-                clearErrors("thumbnail");
-            };
-            reader.readAsDataURL(file);
+            const createBetResult = await writeContractAsync({
+                abi: BET_ABI,
+                address: `0x${String(
+                    import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
+                ).substring(2)}`,
+                functionName: "createMarket",
+                args: marketArgs,
+                value: marketCreationFee,
+            });
+
+            console.log("Create Bet Result:", createBetResult);
+
+            setValue("marketTitle", "");
+            setValue("description", "");
+            setValue("category", "");
+            setValue("betDeadline", new Date());
+            setValue("resolutionDeadline", new Date());
+
+            // Reset outcomes to initial state
+            const initialOutcomes = [{ name: "" }, { name: "" }];
+            setValue("outcomes", initialOutcomes);
+            setOutcomes(initialOutcomes);
+
+            // Optional: Show success modal
+            openModal({
+                message: "Market created successfully",
+                type: "success",
+            });
+        } catch (error: any) {
+            console.error("Market Creation Error:", error);
+
+            openModal({
+                message: handleContractError(error).userMessage,
+                type: "error",
+            });
+        } finally {
+            hideLoader();
         }
     };
 
     const addOutcome = () => {
         if (outcomes.length < 5) {
-            // Limit to 5 outcomes
             const newOutcomes = [
                 ...outcomes,
                 { name: "", probability: undefined },
@@ -268,37 +274,6 @@ export const CreatePage: React.FC = () => {
                     {errors.description && (
                         <p className="text-red-500 text-xs">
                             {errors.description.message}
-                        </p>
-                    )}
-                </div>
-
-                {/* Thumbnail Upload */}
-                <div className="flex flex-col space-y-1 mr-auto w-full">
-                    <label className="text-white text-left">
-                        Bet Thumbnail (1mb max.)
-                    </label>
-                    <div className="flex space-x-4 items-center">
-                        <label className="cursor-pointer flex items-center space-x-2 bg-neutral-900 text-white px-4 py-2 rounded-md hover:bg-neutral-800">
-                            <ImagePlus className="w-5 h-5" />
-                            <span>Upload Image</span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleThumbnailUpload}
-                            />
-                        </label>
-                        {thumbnailPreview && (
-                            <img
-                                src={thumbnailPreview}
-                                alt="Thumbnail Preview"
-                                className="w-20 h-20 object-cover rounded-md"
-                            />
-                        )}
-                    </div>
-                    {errors.thumbnail && (
-                        <p className="text-red-500 text-xs">
-                            {errors.thumbnail.message}
                         </p>
                     )}
                 </div>
@@ -415,7 +390,6 @@ export const CreatePage: React.FC = () => {
                 </div>
 
                 {/* Bet Deadline */}
-
                 <div className="flex flex-col space-y-1 mr-auto w-full">
                     <label className="text-white text-left">
                         Bet Deadline*
@@ -560,7 +534,7 @@ export const CreatePage: React.FC = () => {
                                                     time?.getSeconds() || 0
                                                 );
                                                 field.onChange(updatedDate);
-                                                trigger("betDeadline");
+                                                trigger("resolutionDeadline");
                                             }
                                         }}
                                     />
@@ -624,121 +598,18 @@ export const CreatePage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Bet Fee */}
-                <div className="flex flex-col space-y-1 mr-auto w-full">
-                    <label className="text-white text-left">Bet Fee*</label>
-                    <Controller
-                        name="betFee.type"
-                        control={control}
-                        render={({ field: typeField }) => (
-                            <Controller
-                                name="betFee.value"
-                                control={control}
-                                render={({ field: valueField }) => (
-                                    <div className="flex space-x-2">
-                                        <select
-                                            {...typeField}
-                                            onChange={(e) => {
-                                                typeField.onChange(
-                                                    e.target.value
-                                                );
-                                                // Reset value when type changes
-                                                valueField.onChange(0);
-                                                trigger("betFee");
-                                            }}
-                                            className="bg-neutral-900 text-white border border-neutral-700 rounded-md px-3 py-2 text-xs w-1/3"
-                                        >
-                                            <option value="fixed">
-                                                Fixed Fee
-                                            </option>
-                                            <option value="dynamic">
-                                                Dynamic Fee
-                                            </option>
-                                        </select>
-                                        <div className="flex-grow flex space-x-2">
-                                            <input
-                                                type="number"
-                                                {...valueField}
-                                                min={0}
-                                                step={0.0001}
-                                                onChange={(e) => {
-                                                    const value = parseFloat(
-                                                        parseFloat(
-                                                            e.target.value
-                                                        ).toFixed(4)
-                                                    );
-                                                    valueField.onChange(value);
-                                                    trigger("betFee.value");
-                                                }}
-                                                className="flex-grow outline-none bg-black text-gray-400 placeholder-gray-400 placeholder:text-sm px-3 py-2 rounded-xl border border-gray-800"
-                                                placeholder={
-                                                    typeField.value === "fixed"
-                                                        ? "Enter Fixed Fee"
-                                                        : "Min Fee"
-                                                }
-                                            />
-                                            {typeField.value === "dynamic" && (
-                                                <Controller
-                                                    name="betFee.maxValue"
-                                                    control={control}
-                                                    render={({
-                                                        field: maxValueField,
-                                                    }) => (
-                                                        <input
-                                                            type="number"
-                                                            {...maxValueField}
-                                                            onChange={(e) => {
-                                                                const value =
-                                                                    parseFloat(
-                                                                        parseFloat(
-                                                                            e
-                                                                                .target
-                                                                                .value
-                                                                        ).toFixed(
-                                                                            4
-                                                                        )
-                                                                    );
-                                                                maxValueField.onChange(
-                                                                    value
-                                                                );
-                                                                trigger(
-                                                                    "betFee.maxValue"
-                                                                );
-                                                            }}
-                                                            min={0}
-                                                            step={0.0001}
-                                                            className="flex-grow outline-none bg-black text-gray-400 placeholder-gray-400 placeholder:text-sm px-3 py-2 rounded-xl border border-gray-800"
-                                                            placeholder="Max Fee"
-                                                        />
-                                                    )}
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            />
-                        )}
-                    />
-                    {errors.betFee?.value && (
-                        <p className="text-red-500 text-xs">
-                            {errors.betFee.value.message}
-                        </p>
-                    )}
-                    {errors.betFee?.maxValue && (
-                        <p className="text-red-500 text-xs">
-                            {errors.betFee.maxValue.message}
-                        </p>
-                    )}
-                </div>
-
                 <div className="flex flex-col space-y-1 w-full">
                     <section className="flex justify-between items-center px-4 py-2 rounded-lg bg-[#1f1f1f]">
                         <p className="flex flex-col space-y-1 text-left text-sm">
-                            <span className="text-white font-bold">Bet Creation Fee</span>
-                            <span className="text-[#b1b1b6]">Flat fee for creating a new bet</span>
+                            <span className="text-white font-bold">
+                                Bet Creation Fee
+                            </span>
+                            <span className="text-[#b1b1b6]">
+                                Flat fee for creating a new bet
+                            </span>
                         </p>
                         <p className="flex items-center text-green-600 font-bold text-sm">
-                            0 BNB
+                            0.01 BNB
                         </p>
                     </section>
                 </div>
@@ -746,11 +617,12 @@ export const CreatePage: React.FC = () => {
                 {/* Submit Button */}
                 <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full bg-white text-black py-2 rounded-xl 
                            hover:bg-gray-300 transition-colors duration-300 font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Create Bet
+                    {isSubmitting ? "Creating Bet..." : "Create Bet"}
                 </button>
             </motion.form>
         </motion.div>

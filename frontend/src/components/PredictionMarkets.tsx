@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import randomImage from "../assets/random-image.png";
 import { ChevronDown } from "lucide-react";
-import { useModal } from "@/context/ModalContext";
 import { useNavigate } from "react-router-dom";
 
 interface BetProps {
@@ -26,18 +25,9 @@ export const PredictionMarkets: React.FC<BetProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
-    const { openModal } = useModal();
     const navigate = useNavigate();
 
-    const handleOpenModal = (isLoader: boolean) => {
-        openModal(
-            <div className="flex flex-col justify-center items-center space-y-4">
-                <h2 className="text-lg font-semibold">Modal Title</h2>
-                <p className="mt-2">Modal content goes here</p>
-                {isLoader == true ? <div className="loader"></div> : ""}
-            </div>
-        );
-    };
+    // const handleOpenModal = (isLoader: boolean) => {};
 
     return (
         <div
@@ -76,9 +66,9 @@ export const PredictionMarkets: React.FC<BetProps> = ({
                         <span className=" text-gray-200 ">Outcomes</span>
                         <span className="text-white flex justify-start space-x-2 font-bold">
                             <button
-                                onClick={() => {
-                                    handleOpenModal(true);
-                                }}
+                                // onClick={() => {
+                                //     handleOpenModal(true);
+                                // }}
                                 className="rounded-full px-3 py-1 bg-[#1f1f1f] text-sm"
                             >
                                 Yes

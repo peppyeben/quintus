@@ -8,11 +8,9 @@ import Navbar from "./components/NavBar";
 import { MarketsPage } from "./pages/MarketsPage";
 import { MyBetsPage } from "./pages/MyBetsPage";
 import { CreatePage } from "./pages/CreatePage";
-import { ModalProvider } from "./context/ModalContext";
-import { Modal } from "./components/ui/Modal";
 import { LoaderProvider } from "./context/LoaderContext";
-import { LoaderModal } from "./components/ui/LoaderModal";
 import { MarketDetailsPage } from "./pages/MarketDetailsPage";
+import { CustomModalProvider } from "./context/CustomModalContext";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -24,7 +22,7 @@ function App() {
     return (
         <div className="w-[100vw] bg-black">
             <LoaderProvider>
-                <ModalProvider>
+                <CustomModalProvider>
                     <AnimatePresence>
                         <Sidebar
                             isOpen={isSidebarOpen}
@@ -32,8 +30,6 @@ function App() {
                         />
                     </AnimatePresence>
                     <Navbar onMobileMenuToggle={toggleMobileMenu} />
-                    <LoaderModal />
-                    <Modal /> {/* Add this line */}
                     <div className="min-h-screen flex flex-col">
                         <Routes>
                             <Route path="/" element={<HomePage />} />
@@ -47,7 +43,7 @@ function App() {
                             <Route path="/create" element={<CreatePage />} />
                         </Routes>
                     </div>
-                </ModalProvider>
+                </CustomModalProvider>
             </LoaderProvider>
         </div>
     );

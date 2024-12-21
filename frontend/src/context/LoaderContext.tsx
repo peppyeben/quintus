@@ -1,5 +1,6 @@
-// src/context/LoaderContext.tsx
 import { createContext, useContext, ReactNode, useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { CustomLoader } from "@/components/CustomLoader";
 
 interface LoaderContextType {
     isLoading: boolean;
@@ -18,6 +19,9 @@ export function LoaderProvider({ children }: { children: ReactNode }) {
     return (
         <LoaderContext.Provider value={{ isLoading, showLoader, hideLoader }}>
             {children}
+            <AnimatePresence>
+                {isLoading && <CustomLoader />}
+            </AnimatePresence>
         </LoaderContext.Provider>
     );
 }
