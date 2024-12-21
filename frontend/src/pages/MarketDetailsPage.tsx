@@ -1,16 +1,28 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "react-router-dom";
 import { FaRegClock } from "react-icons/fa";
 import { TbBrandBinance } from "react-icons/tb";
+import { ChevronDown } from "lucide-react";
 import { useMarkets } from "@/hooks/useMarkets";
 import { MARKET_CATEGORY } from "@/utils/util";
 import { handleContractError } from "@/utils/errors";
+import { usePlaceBet } from "@/hooks/usePlaceBet";
+import { useCustomModal } from "@/context/CustomModalContext";
+import { parseEther } from "ethers";
 
 export const MarketDetailsPage: React.FC = () => {
     const { markets, isLoading, error } = useMarkets();
     const { id } = useParams<{ id: string }>();
-    const [pageError, setPageError] = React.useState<string | null>(null);
+    const [pageError, setPageError] = useState<string | null>(null);
+
+    // Bet-related states
+    const [isOutcomeOpen, setIsOutcomeOpen] = useState(false);
+    const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
+    const [betAmount, setBetAmount] = useState<bigint>(0n);
+
+    const { placeBet } = usePlaceBet();
+    const { openModal } = useCustomModal();
 
     // Convert id to number for comparison
     const marketId = useMemo(() => {
@@ -27,6 +39,58 @@ export const MarketDetailsPage: React.FC = () => {
             setPageError(handleContractError(error.message).userMessage);
         }
     }, [error]);
+
+    // Handle bet amount change
+    const handleBetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        try {
+            // Convert to smallest unit (assuming 4 decimal places)
+            const amount = Math.floor(Number(value) * 10000);
+            setBetAmount(BigInt(amount));
+        } catch (error) {
+            setBetAmount(0n);
+            console.error(error);
+        }
+    };
+
+    // Handle place bet
+    const handlePlaceBet = async () => {
+        if (!selectedOutcome) {
+            openModal({
+                message: "Please select an outcome before placing a bet",
+                type: "error",
+            });
+            return;
+        }
+
+        if (!betAmount || betAmount <= 0n) {
+            openModal({
+                message: "Please enter a valid bet amount",
+                type: "error",
+            });
+            return;
+        }
+
+        if (!market) {
+            openModal({
+                message: "Market not found",
+                type: "error",
+            });
+            return;
+        }
+
+        await placeBet({
+            marketId: Number(market.id),
+            outcome: selectedOutcome,
+            betAmount: parseEther(String(Number(betAmount) / 1e4)),
+            openModal,
+            onSuccess: () => {
+                // Reset form after successful bet
+                setSelectedOutcome(null);
+                setBetAmount(0n);
+            },
+        });
+    };
 
     // Loading state
     if (isLoading) {
@@ -122,6 +186,48 @@ export const MarketDetailsPage: React.FC = () => {
 
                 <div className="text-white flex flex-col w-full justify-center items-center space-y-2">
                     <p className="font-bold mr-auto">Select Outcome</p>
+                    <div className="w-full relative">
+                        <button
+                            onClick={() => setIsOutcomeOpen(!isOutcomeOpen)}
+                            className="w-full text-left text-xs px-3 py-2 rounded-md 
+                            border border-neutral-700 bg-neutral-900
+                            flex items-center justify-between
+                            hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <span
+                                className={
+                                    selectedOutcome
+                                        ? "text-white"
+                                        : "text-neutral-500"
+                                }
+                            >
+                                {selectedOutcome || "Select Outcome"}
+                            </span>
+                            <ChevronDown
+                                className={`w-5 h-5 transition-transform ${
+                                    isOutcomeOpen ? "rotate-180" : ""
+                                }`}
+                            />
+                        </button>
+
+                        {isOutcomeOpen && (
+                            <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {market.outcomes.map((outcome) => (
+                                    <div
+                                        key={outcome}
+                                        onClick={() => {
+                                            setSelectedOutcome(outcome);
+                                            setIsOutcomeOpen(false);
+                                        }}
+                                        className="px-3 py-1 cursor-pointer hover:bg-neutral-800 text-white"
+                                    >
+                                        {outcome}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {market.outcomes.map((outcome, index) => (
                         <button
                             key={index}
@@ -150,27 +256,32 @@ export const MarketDetailsPage: React.FC = () => {
 
                 <div className="flex flex-col space-y-2 text-white">
                     <p className="font-bold mr-auto">Bet Amount</p>
-                    <p className="relative w-full border rounded-lg p-1">
+                    <p className="relative w-full border border-neutral-700 rounded-lg p-1">
                         <span className="absolute top-[0.75rem] left-2">
                             <TbBrandBinance className="text-[#F3BA2F] text-2xl m-auto" />
                         </span>
                         <input
                             type="number"
-                            className="w-full py-2 pl-10 pr-3 text-white border-none outline-none appearance-none bg-transparent"
+                            className="w-full py-2 pl-10 pr-3 text-white placeholder:text-sm border-none outline-none appearance-none bg-transparent"
                             placeholder="Enter bet amount"
                             min={0}
                             step={0.0001}
+                            onChange={handleBetAmountChange}
                         />
                     </p>
                 </div>
 
                 <div className="flex w-full">
                     <button
+                        onClick={handlePlaceBet}
+                        disabled={
+                            !selectedOutcome || !betAmount || betAmount <= 0n
+                        }
                         className="w-full bg-white text-black py-2 rounded-xl 
                            hover:bg-gray-300 transition-colors duration-300 font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Place Bet
+                        {!selectedOutcome ? "Select Outcome" : "Place Bet"}
                     </button>
                 </div>
             </motion.div>

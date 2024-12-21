@@ -1,15 +1,18 @@
 import React from "react";
 // import randomImage from "../assets/random-image.png";
 import { Market } from "@/utils/markets";
+import { useNavigate } from "react-router-dom";
 
 export const FeaturedCard: React.FC<Market> = ({
     title,
     description,
-    // id,
+    id,
     // totalPool,
     // category,
     // outcomes,
 }) => {
+    const navigate = useNavigate();
+
     return (
         <div className="flex flex-col justify-center items-start rounded-xl space-y-3 p-3 max-w-[28rem] w-full max-h-[15rem] bg-[#0d0d0d] space-x-1">
             <section className="flex flex-col justify-start items-start w-full h-full">
@@ -29,7 +32,12 @@ export const FeaturedCard: React.FC<Market> = ({
                     />
                 </div>
             </section> */}
-            <button className="rounded-full text-sm px-4 py-1 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90">
+            <button
+                onClick={() => {
+                    navigate(`/markets/${id}`);
+                }}
+                className="rounded-full text-sm px-4 py-1 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90"
+            >
                 Place Bet
             </button>
         </div>
