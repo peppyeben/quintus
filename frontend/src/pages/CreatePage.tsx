@@ -22,13 +22,9 @@ import TimePicker from "react-time-picker";
 import "react-day-picker/dist/style.css";
 import "react-time-picker/dist/TimePicker.css";
 
-import { useWriteContract, useAccount } from "wagmi";
-import { BET_ABI } from "@/utils/bet-abi";
-import { MARKET_CATEGORY } from "@/utils/util";
-import { useLoader } from "@/context/LoaderContext";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { handleContractError } from "@/utils/errors";
-import { parseEther } from "ethers";
+import { useCreateMarket } from "@/hooks/useCreateMarket";
 
 // Categories for market
 const CATEGORIES = ["Sports", "Crypto", "Politics", "Election", "Others"];
@@ -86,16 +82,15 @@ export const CreatePage: React.FC = () => {
     const [outcomes, setOutcomes] = useState([{ name: "" }, { name: "" }]);
     const [time, setTime] = useState<Date | null>(new Date());
 
-    const { writeContractAsync } = useWriteContract();
     const { openModal } = useCustomModal();
-    const { showLoader, hideLoader } = useLoader();
-    const account = useAccount();
+
+    const { createMarket, isCreating } = useCreateMarket();
 
     const {
         control,
         register,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
         setValue,
         trigger,
         clearErrors,
@@ -117,79 +112,31 @@ export const CreatePage: React.FC = () => {
     const onSubmit = async (data: MarketFormData) => {
         console.log("Submitting form data:", data);
 
-        // Prepare market category
-        const mktCatLw = MARKET_CATEGORY.map((c) => String(c).toLowerCase());
-        const selectedCategory = mktCatLw.indexOf(
-            String(data.category).toLowerCase()
-        );
-
-        // Wallet connection check
-        if (!account.isConnected) {
-            openModal({
-                message: "Sign in to Create Market",
-                type: "warning",
-            });
-            return;
-        }
-
-        const marketArgs = [
-            data.marketTitle,
-            data.description,
-            new Date(data.betDeadline).getTime() / 1000,
-            new Date(data.resolutionDeadline).getTime() / 1000,
-            data.outcomes.map((c) => c.name),
-            selectedCategory,
-        ];
-
-        const marketCreationFee = parseEther("0.01");
-
         try {
-            showLoader();
+            await createMarket({
+                marketTitle: data.marketTitle,
+                description: data.description,
+                betDeadline: data.betDeadline,
+                resolutionDeadline: data.resolutionDeadline,
+                outcomes: data.outcomes,
+                category: data.category,
+                openModal,
+                onSuccess: () => {
+                    // Reset form values
+                    setValue("marketTitle", "");
+                    setValue("description", "");
+                    setValue("category", "");
+                    setValue("betDeadline", new Date());
+                    setValue("resolutionDeadline", new Date());
 
-            const createBetResult = await writeContractAsync({
-                abi: BET_ABI,
-                address: `0x${String(
-                    import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
-                ).substring(2)}`,
-                functionName: "createMarket",
-                args: marketArgs,
-                value: marketCreationFee,
+                    // Reset outcomes to initial state
+                    const initialOutcomes = [{ name: "" }, { name: "" }];
+                    setValue("outcomes", initialOutcomes);
+                    setOutcomes(initialOutcomes);
+                },
             });
-
-            console.log("Create Bet Result:", createBetResult);
-
-            // const result = useTransactionReceipt({
-            //     hash: createBetResult,
-            //     config: useWagmiConfig(),
-            // });
-
-            // console.log("Result: ", result);
-
-            setValue("marketTitle", "");
-            setValue("description", "");
-            setValue("category", "");
-            setValue("betDeadline", new Date());
-            setValue("resolutionDeadline", new Date());
-
-            // Reset outcomes to initial state
-            const initialOutcomes = [{ name: "" }, { name: "" }];
-            setValue("outcomes", initialOutcomes);
-            setOutcomes(initialOutcomes);
-
-            // Optional: Show success modal
-            openModal({
-                message: "Market created successfully",
-                type: "success",
-            });
-        } catch (error: unknown) {
-            console.error("Market Creation Error:", error);
-
-            openModal({
-                message: handleContractError(error).userMessage,
-                type: "error",
-            });
-        } finally {
-            hideLoader();
+        } catch (error) {
+            handleContractError(error);
         }
     };
 
@@ -620,12 +567,12 @@ export const CreatePage: React.FC = () => {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isCreating}
                     className="w-full bg-white text-black py-2 rounded-xl 
-                           hover:bg-gray-300 transition-colors duration-300 font-bold
-                           disabled:opacity-50 disabled:cursor-not-allowed"
+                   hover:bg-gray-300 transition-colors duration-300 font-bold
+                   disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isSubmitting ? "Creating Market..." : "Create Market"}
+                    {isCreating ? "Creating Market..." : "Create Market"}
                 </button>
             </motion.form>
         </motion.div>
