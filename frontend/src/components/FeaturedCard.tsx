@@ -5,6 +5,7 @@ import { Market } from "@/utils/markets";
 export const FeaturedCard: React.FC<Market> = ({
     title,
     description,
+    // id,
     // totalPool,
     // category,
     // outcomes,

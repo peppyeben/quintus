@@ -29,3 +29,51 @@
     font-weight: 900;
     src: url("./Satoshi-Black.otf") format("opentype");
 }
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 400;
+    src: url("./orbitron/Orbitron-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 500;
+    src: url("./orbitron/Orbitron-Medium.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 500;
+    src: url("./orbitron/Orbitron-SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 700;
+    src: url("./orbitron/Orbitron-Bold.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 900;
+    src: url("./orbitron/Orbitron-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Orbitron";
+    font-style: normal;
+    font-weight: 900;
+    src: url("./orbitron/Orbitron-Black.ttf") format("truetype");
+}

@@ -2,6 +2,7 @@ import React from "react";
 import { FaBars, FaPlus, FaSearch } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { WalletWrapper } from "./Wallet";
+import QuintusImage from "../assets/quintus.png";
 
 // Define the props type for Navbar
 type NavbarProps = {
@@ -18,9 +19,18 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
                 className="text-2xl cursor-pointer text-white"
             />
             <div className="flex justify-between items-center space-x-4 w-full">
-                <Link to={"/"} className="text-white">
-                    Quintus
-                </Link>
+                <div className="flex space-x-2 justify-center items-center">
+                    <img src={QuintusImage} alt="Quintus" className="w-8 h-8" />
+                    <Link
+                        to={"/"}
+                        className="text-white font-black text-lg"
+                        style={{
+                            fontFamily: "Orbitron",
+                        }}
+                    >
+                        Quintus
+                    </Link>
+                </div>
                 <section className="flex items-center space-x-3">
                     <p className="relative">
                         <input
