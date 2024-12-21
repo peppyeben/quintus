@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useReadContract } from "wagmi";
 import { BET_ABI } from "@/utils/bet-abi";
-import { Market, parseMarkets } from "@/utils/markets";
+import { Market, parseMarkets, RawMarketData } from "@/utils/markets";
 
 export const useMarkets = () => {
     const [allMarkets, setAllMarkets] = useState<Market[]>([]);
@@ -26,7 +26,7 @@ export const useMarkets = () => {
     useEffect(() => {
         if (allMarketsData) {
             try {
-                const parsedMarkets = parseMarkets(allMarketsData as Market[]);
+                const parsedMarkets = parseMarkets(allMarketsData as RawMarketData);
                 setAllMarkets(parsedMarkets);
                 setIsLoading(false);
             } catch (err) {

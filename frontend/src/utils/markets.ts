@@ -1,3 +1,5 @@
+// src/utils/markets.ts
+
 export interface Market {
     id: bigint;
     title: string;
@@ -11,7 +13,21 @@ export interface Market {
     category: bigint;
 }
 
-export function parseMarkets(rawMarketData: any[]): Market[] {
+// Type for the raw data array from the contract
+export type RawMarketData = [
+    bigint[], // marketIds
+    string[], // betTitles
+    string[], // descriptions
+    bigint[], // betDeadlines
+    bigint[], // resolutionDeadlines
+    string[], // creators
+    boolean[], // resolved
+    string[][], // outcomes
+    string[], // winningOutcomes
+    bigint[] // categories
+];
+
+export function parseMarkets(rawMarketData: RawMarketData): Market[] {
     const [
         marketIds,
         betTitles,
@@ -25,7 +41,7 @@ export function parseMarkets(rawMarketData: any[]): Market[] {
         categories,
     ] = rawMarketData;
 
-    return marketIds.map((id: number, index: number) => ({
+    return marketIds.map((id, index) => ({
         id,
         title: betTitles[index],
         description: descriptions[index],

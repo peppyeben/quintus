@@ -22,14 +22,13 @@ import TimePicker from "react-time-picker";
 import "react-day-picker/dist/style.css";
 import "react-time-picker/dist/TimePicker.css";
 
-import { useWriteContract, useAccount, useTransactionReceipt } from "wagmi";
+import { useWriteContract, useAccount } from "wagmi";
 import { BET_ABI } from "@/utils/bet-abi";
 import { MARKET_CATEGORY } from "@/utils/util";
 import { useLoader } from "@/context/LoaderContext";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { handleContractError } from "@/utils/errors";
 import { parseEther } from "ethers";
-import { useWagmiConfig } from "@/wagmi";
 
 // Categories for market
 const CATEGORIES = ["Sports", "Crypto", "Politics", "Election", "Others"];
