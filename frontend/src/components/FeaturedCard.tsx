@@ -1,28 +1,17 @@
 import React from "react";
-import randomImage from "../assets/random-image.png";
+// import randomImage from "../assets/random-image.png";
+import { Market } from "@/utils/markets";
 
-interface BetProps {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    deadline: number;
-    totalPool: number;
-    category: string;
-    outcomes: string[];
-}
-
-export const FeaturedCard: React.FC<BetProps> = ({
+export const FeaturedCard: React.FC<Market> = ({
     title,
     description,
-    image,
     // totalPool,
     // category,
     // outcomes,
 }) => {
     return (
-        <div className="flex justify-center items-start rounded-xl p-3 max-w-[28rem] w-full h-[15rem] bg-[#0d0d0d] space-x-1 relative">
-            <section className="flex flex-col justify-start items-start w-1/2 h-full">
+        <div className="flex flex-col justify-center items-start rounded-xl space-y-3 p-3 max-w-[28rem] w-full max-h-[15rem] bg-[#0d0d0d] space-x-1">
+            <section className="flex flex-col justify-start items-start w-full h-full">
                 <p className="text-white text-lg font-bold text-left break-words">
                     {title}
                 </p>
@@ -30,7 +19,7 @@ export const FeaturedCard: React.FC<BetProps> = ({
                     {description}
                 </p>
             </section>
-            <section className="relative w-1/2 h-full min-h-[9rem]">
+            {/* <section className="relative w-1/2 h-full min-h-[9rem]">
                 <div className="absolute inset-0 overflow-hidden rounded-lg">
                     <img
                         src={image || randomImage}
@@ -38,8 +27,8 @@ export const FeaturedCard: React.FC<BetProps> = ({
                         className="w-full h-full object-cover object-center"
                     />
                 </div>
-            </section>
-            <button className="absolute bottom-3 left-3 rounded-full text-sm px-4 py-1 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90">
+            </section> */}
+            <button className="rounded-full text-sm px-4 py-1 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90">
                 Place Bet
             </button>
         </div>

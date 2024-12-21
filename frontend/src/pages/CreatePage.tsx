@@ -22,13 +22,14 @@ import TimePicker from "react-time-picker";
 import "react-day-picker/dist/style.css";
 import "react-time-picker/dist/TimePicker.css";
 
-import { useWriteContract, useAccount } from "wagmi";
+import { useWriteContract, useAccount, useTransactionReceipt } from "wagmi";
 import { BET_ABI } from "@/utils/bet-abi";
 import { MARKET_CATEGORY } from "@/utils/util";
 import { useLoader } from "@/context/LoaderContext";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { handleContractError } from "@/utils/errors";
 import { parseEther } from "ethers";
+import { useWagmiConfig } from "@/wagmi";
 
 // Categories for market
 const CATEGORIES = ["Sports", "Crypto", "Politics", "Election", "Others"];
@@ -143,10 +144,6 @@ export const CreatePage: React.FC = () => {
 
         const marketCreationFee = parseEther("0.01");
 
-        // console.log(marketArgs);
-        // console.log(marketCreationFee);
-        // return
-
         try {
             showLoader();
 
@@ -161,6 +158,13 @@ export const CreatePage: React.FC = () => {
             });
 
             console.log("Create Bet Result:", createBetResult);
+
+            // const result = useTransactionReceipt({
+            //     hash: createBetResult,
+            //     config: useWagmiConfig(),
+            // });
+
+            // console.log("Result: ", result);
 
             setValue("marketTitle", "");
             setValue("description", "");
@@ -622,7 +626,7 @@ export const CreatePage: React.FC = () => {
                            hover:bg-gray-300 transition-colors duration-300 font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isSubmitting ? "Creating Bet..." : "Create Bet"}
+                    {isSubmitting ? "Creating Market..." : "Create Market"}
                 </button>
             </motion.form>
         </motion.div>

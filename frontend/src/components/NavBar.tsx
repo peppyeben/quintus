@@ -1,6 +1,6 @@
 import React from "react";
 import { FaBars, FaPlus, FaSearch } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { WalletWrapper } from "./Wallet";
 
 // Define the props type for Navbar
@@ -9,6 +9,8 @@ type NavbarProps = {
 };
 
 const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
+    const navigate = useNavigate();
+
     return (
         <nav className="bg-black w-full shadow-md py-4 px-6 flex justify-between items-center space-x-4">
             <FaBars
@@ -30,7 +32,12 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
                             <FaSearch className="text-gray-200 text-lg" />
                         </span>
                     </p>
-                    <button className="bg-transparent flex items-center space-x-3 rounded-full outline-none appearance-none border border-white text-white py-1 px-6">
+                    <button
+                        onClick={() => {
+                            navigate("/create");
+                        }}
+                        className="bg-transparent flex items-center space-x-3 rounded-full outline-none appearance-none border border-white text-white py-1 px-6"
+                    >
                         <span className="bg-white">
                             <FaPlus className="text-gray-950 text-sm" />
                         </span>
@@ -41,9 +48,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
                         text="Sign In"
                         className="bg-white rounded-full px-6 py-1 text-black transition-all duration-300 hover:bg-gray-200"
                         withWalletAggregator={true}
-                    >
-
-                    </WalletWrapper>
+                    ></WalletWrapper>
                 </section>
             </div>
         </nav>
