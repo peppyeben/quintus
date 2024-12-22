@@ -124,6 +124,136 @@ contract QuintusIntegrationTest is Test {
         assertGt(owner.balance, initialPlatformBalance); // Platform fee
     }
 
+    function testCompleteMarketLifecycleWithMultipleUsers() public {
+    // Setup World Cup Final market
+    string[] memory outcomes = new string[](3);
+    outcomes[0] = "Argentina";
+    outcomes[1] = "France";
+    outcomes[2] = "Draw";
+
+    uint256 betDeadline = block.timestamp + 1 days;
+    uint256 resolutionDeadline = block.timestamp + 2 days;
+
+    // Creator (user1) creates market
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "FIFA World Cup 2026 Final",
+        "Who will win the World Cup Final?",
+        betDeadline,
+        resolutionDeadline,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Multiple users place bets
+    vm.prank(user2);
+    market.placeBet{value: 5 ether}(0, "Argentina");
+
+    vm.prank(user3);
+    market.placeBet{value: 3 ether}(0, "France");
+
+    vm.prank(user4);
+    market.placeBet{value: 2 ether}(0, "Draw");
+
+    // Additional bet from user2
+    vm.prank(user2);
+    market.placeBet{value: 2 ether}(0, "Argentina");
+
+    // Record initial balances
+    uint256 user1InitialBalance = user1.balance;
+    uint256 user2InitialBalance = user2.balance;
+    uint256 ownerInitialBalance = owner.balance;
+
+    // Move time to after match
+    vm.warp(resolutionDeadline + 1);
+
+    // Backend triggers market resolution
+    market.resolveMarket(0);
+
+    // Oracle resolves the bet
+    vm.prank(owner);
+    oracle.resolveBet(0, "Argentina");
+
+    // Winners claim their rewards
+    vm.prank(user2);
+    market.claimWinnings(0);
+
+    // Verify balances and fees
+    assertTrue(user1.balance > user1InitialBalance, "Creator should receive fees");
+    assertTrue(user2.balance > user2InitialBalance, "Winner should receive winnings");
+    assertTrue(owner.balance > ownerInitialBalance, "Platform should receive fees");
+
+    // Verify market state
+    (,,,,, bool resolved,,, string memory winningOutcome,) = market.getMarketInfo(0);
+    assertTrue(resolved, "Market should be resolved");
+    assertEq(winningOutcome, "Argentina", "Winning outcome should be Argentina");
+
+    // Verify bet weights
+    (uint256 argentinaBets, uint256 argentinaWeight) = market.getMarketBets(0, "Argentina");
+    assertEq(argentinaBets, 7 ether, "Total Argentina bets should be 7 ether");
+    assertEq(argentinaWeight, 58, "Argentina weight should be 58%");
+    }
+
+    function testUnderDogWinningsCalculation() public {
+    // Setup World Cup Final market
+    string[] memory outcomes = new string[](3);
+    outcomes[0] = "Argentina";
+    outcomes[1] = "France";
+    outcomes[2] = "Draw";
+
+    uint256 betDeadline = block.timestamp + 1 days;
+    uint256 resolutionDeadline = block.timestamp + 2 days;
+
+    // Create market
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "FIFA World Cup 2026 Final",
+        "Who will win the World Cup Final?",
+        betDeadline,
+        resolutionDeadline,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Multiple users place bets
+    vm.prank(user2);
+    market.placeBet{value: 5 ether}(0, "Argentina");
+
+    vm.prank(user3);
+    market.placeBet{value: 3 ether}(0, "France");
+
+    vm.prank(user4);
+    market.placeBet{value: 2 ether}(0, "Draw");
+
+    // Additional bet from user2
+    vm.prank(user2);
+    market.placeBet{value: 2 ether}(0, "Argentina");
+
+    // Move time to after match
+    vm.warp(resolutionDeadline + 1);
+
+    // Resolve market with underdog (France) winning
+    market.resolveMarket(0);
+    
+    vm.prank(owner);
+    oracle.resolveBet(0, "France");
+
+    uint256 user3BalanceBefore = user3.balance;
+    
+    vm.prank(user3);
+    market.claimWinnings(0);
+
+    // Calculate expected minimum winnings (should be more than double the bet)
+    assertTrue(user3.balance > user3BalanceBefore + 6 ether, "Underdog winner should receive significant returns");
+
+    // Verify final weights
+    (uint256 franceBets, uint256 franceWeight) = market.getMarketBets(0, "France");
+    assertEq(franceBets, 3 ether, "Total France bets should be 3 ether");
+    assertEq(franceWeight, 25, "France weight should be 25%");
+    }
+
+
+
     // Helper functions
     function createSportsMarket() internal returns (uint256) {
         string[] memory outcomes = new string[](2);

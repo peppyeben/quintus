@@ -83,6 +83,14 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     event BetPlaced(uint256 indexed marketId, address user, string outcome, uint256 amount);
     event MarketResolved(uint256 indexed marketId, string winningOutcome);
     event WinningsClaimed(uint256 indexed marketId, address user, uint256 amount);
+    event MarketReadyForResolution(
+    uint256 indexed marketId,
+    string betTitle,
+    string[] outcomes,
+    uint256 totalPool,
+    address creator,
+    MarketCategory category
+    );
 
     /// @notice Contract constructor
     /// @param _oracle Address of the oracle contract for fetching winning outcomes
@@ -217,37 +225,28 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         emit MarketResolved(_marketId, _outcome);
     }
 
-    /// @notice Resolves a market with the winning outcome determined by the oracle
+    /// @notice Emits market details for resolution
     /// @param _marketId The ID of the market to resolve
     function resolveMarket(uint256 _marketId) external nonReentrant {
-        // Check market state first
+        // Get market data
         Market storage market = markets[_marketId];
+        
+        // Basic checks
         if (!market.marketCreated) revert MarketNotCreated();
         if (block.timestamp < market.resolutionDeadline) revert TooEarlyToResolve();
         if (market.resolved) revert MarketAlreadyResolved();
 
-        // Effects: Update state before external interactions
-        market.resolved = true;
-
-        // Interaction: Call oracle to resolve if no outcome is set
-        if (bytes(market.winningOutcome).length == 0) {
-            oracle.resolveBet(_marketId, market.winningOutcome);
-        }
-
-        // Validate the winning outcome
-        bool validOutcome = false;
-        for (uint256 i = 0; i < market.outcomes.length; i++) {
-            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(market.winningOutcome))) {
-                validOutcome = true;
-                break;
-            }
-        }
-        if (!validOutcome) revert InvalidOutcome();
-
-        // Emit event at the end
-        emit MarketResolved(_marketId, market.winningOutcome);
+        // Emit market details for the backend to process
+        emit MarketReadyForResolution(
+            _marketId,
+            market.betTitle,
+            market.outcomes,
+            market.totalPool,
+            market.creator,
+            market.category
+        );
     }
-    /// @notice Fetches all created markets
+      /// @notice Fetches all created markets
     /// @dev Returns arrays of market IDs and their corresponding details
     function getAllMarkets()
         external
@@ -261,7 +260,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
             address[] memory creators,
             bool[] memory resolved,
             string[][] memory outcomes,
-            uint256 totalPool,
+            uint256[] memory totalPools,
             string[] memory winningOutcomes,
             MarketCategory[] memory categories
         )
@@ -277,7 +276,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
                 new address[](0),
                 new bool[](0),
                 new string[][](0),
-                0,
+                new uint256[](0),
                 new string[](0),
                 new MarketCategory[](0)
             );
@@ -291,6 +290,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         creators = new address[](total);
         resolved = new bool[](total);
         outcomes = new string[][](total);
+        totalPools = new uint256[](total);
         winningOutcomes = new string[](total);
         categories = new MarketCategory[](total);
 
@@ -304,6 +304,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
                 resolutionDeadlines[i] = market.resolutionDeadline;
                 creators[i] = market.creator;
                 resolved[i] = market.resolved;
+                totalPools[i] = market.totalPool;
                 outcomes[i] = market.outcomes;
                 winningOutcomes[i] = market.winningOutcome;
                 categories[i] = market.category;
@@ -338,13 +339,13 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
             market.creator,
             market.resolved,
             market.outcomes,
-            0,
+            market.totalPool,
             market.winningOutcome,
             market.category
     
         );
     }
-    
+
     /// @notice Gets total bets placed on a specific outcome for a market
     /// @param _marketId The ID of the market
     /// @param _outcome The outcome for which to fetch bets

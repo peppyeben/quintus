@@ -12,6 +12,14 @@ contract QuintusMarketTest is Test {
     address public user1;
     address public user2;
     uint256 public constant MARKET_CREATION_FEE = 0.01 ether;
+    event MarketReadyForResolution(
+        uint256 indexed marketId,
+        string betTitle,
+        string[] outcomes,
+        uint256 totalPool,
+        address creator,
+        QuintusMarket.MarketCategory category
+    );
 
     function setUp() public {
         owner = address(this);
@@ -318,6 +326,51 @@ contract QuintusMarketTest is Test {
     assertEq(totalBets, 100 ether, "Total bets should be 100 ether");
     assertEq(weight, 100, "Weight should be 100%");
     }
+
+    function testResolveMarket() public {
+    // Setup market parameters
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    uint256 betDeadline = block.timestamp + 1 days;
+    uint256 resolutionDeadline = block.timestamp + 2 days;
+
+    // Create market
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "World Cup Final",
+        "Who will win?",
+        betDeadline,
+        resolutionDeadline,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Place some bets
+    vm.prank(user1);
+    market.placeBet{value: 1 ether}(0, "Team A");
+    
+    vm.prank(user2);
+    market.placeBet{value: 2 ether}(0, "Team B");
+
+    // Move time past resolution deadline
+    vm.warp(resolutionDeadline + 1);
+
+    // Test resolveMarket emits correct event
+    vm.expectEmit(true, true, true, true);
+    emit MarketReadyForResolution(
+        0,
+        "World Cup Final",
+        outcomes,
+        3 ether,
+        user1,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+    market.resolveMarket(0);
+    }
+
+
 
     function testGetMarketBetsWithMultipleOutcomes() public {
         string[] memory outcomes = new string[](2);
