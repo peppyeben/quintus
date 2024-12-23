@@ -227,7 +227,16 @@ export const MarketDetailsPage: React.FC = () => {
                 <div className="text-white flex flex-col w-full justify-center items-center space-y-3">
                     <p className="flex w-full justify-between items-center pb-3">
                         <span className="font-bold mr-auto">
-                            {!market.resolved && <span>Select Outcome</span>}
+                            {!market.resolved &&
+                                Number(market.betDeadline) >
+                                    Date.now() / 1000 && (
+                                    <span>Select Outcome</span>
+                                )}
+                            {!market.resolved &&
+                                Number(market.betDeadline) <
+                                    Date.now() / 1000 && (
+                                    <span>Active</span>
+                                )}
                             {market.resolved && <span>Closed</span>}
                         </span>
                         {!market.resolved && (
