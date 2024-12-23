@@ -26,7 +26,7 @@ export const usePlaceBet = () => {
                     import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
                 ).substring(2)}`,
                 functionName: "placeBet",
-                args: [marketId, outcome],
+                args: [BigInt(marketId), outcome],
                 value: betAmount,
             });
 
