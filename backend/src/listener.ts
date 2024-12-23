@@ -1,6 +1,8 @@
 import { ethers } from "ethers";
 import { BET_ABI } from "./utils/abi";
-require("dotenv").config();
+
+import dotenv from "dotenv";
+dotenv.config();
 
 const main = async () => {
     const provider = new ethers.JsonRpcProvider(

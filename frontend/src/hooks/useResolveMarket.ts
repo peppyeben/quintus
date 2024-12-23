@@ -7,7 +7,7 @@ interface ResolveMarketOptions {
     marketId: number;
     openModal?: (options: {
         message: string;
-        type: "info" | "success" | "error";
+        type: "info" | "success" | "error" | "warning";
     }) => void;
     onSuccess?: () => void;
 }
@@ -65,8 +65,9 @@ export const useResolveMarket = () => {
 
             if (receipt?.status === "success") {
                 openModal?.({
-                    message: "Market resolved successfully",
-                    type: "success",
+                    message:
+                        "Market resolution in progress... \nYou can close this modal",
+                    type: "warning",
                 });
 
                 onSuccess?.();

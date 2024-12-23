@@ -229,7 +229,7 @@ export const MarketDetailsPage: React.FC = () => {
                         <span className="font-bold mr-auto">
                             Select Outcome
                         </span>
-
+                        {!market.resolved && (
                         <button
                             disabled={
                                 Number(market.resolutionDeadline) >
@@ -239,7 +239,7 @@ export const MarketDetailsPage: React.FC = () => {
                             onClick={handleResolveMarket}
                         >
                             Resolve Market
-                        </button>
+                        </button>)}
                         {market.resolved && (
                             <span className="text-white bg-[#1f1f1f] text-sm px-4 py-1 rounded-lg">
                                 Resolved
