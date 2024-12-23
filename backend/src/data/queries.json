@@ -1,0 +1,32 @@
+{
+    "predictionQueries": [
+        {
+            "query": "Who will win in Crystal Palace vs Arsenal?",
+            "outcomes": ["Arsenal", "Crystal Palace", "Draw"]
+        },
+        {
+            "query": "How many total goals will be scored in Crystal Palace vs Arsenal?",
+            "outcomes": ["0", "1", "2", "3", "4", "5", "6", "7", "7+"]
+        },
+        {
+            "query": "How many goals will Arsenal score against Crystal Palace?",
+            "outcomes": ["0", "1", "2", "3", "3+"]
+        },
+        {
+            "query": "How many goals will Crystal Palace score against Arsenal?",
+            "outcomes": ["0", "1", "2", "3", "3+"]
+        },
+        {
+            "query": "Will both teams score in Crystal Palace vs Arsenal?",
+            "outcomes": ["Yes", "No"]
+        },
+        {
+            "query": "Will Arsenal keep a clean sheet against Crystal Palace?",
+            "outcomes": ["Yes", "No"]
+        },
+        {
+            "query": "Will Crystal Palace keep a clean sheet against Arsenal?",
+            "outcomes": ["Yes", "No"]
+        }
+    ]
+}

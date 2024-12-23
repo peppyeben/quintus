@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { CONTRACT_ABI } from "./utils/abi";
+import { BET_ABI } from "./utils/abi";
 require("dotenv").config();
 
 const main = async () => {
@@ -7,20 +7,30 @@ const main = async () => {
         process.env.BSC_RPC_URL as string
     );
 
-    const contractAddress = process.env.CONTRACT_ADDRESS as string;
+    const contractAddress = process.env.QUINTUS_MARKET as string;
 
-    const contract = new ethers.Contract(
-        contractAddress,
-        CONTRACT_ABI,
-        provider
-    );
+    const contract = new ethers.Contract(contractAddress, BET_ABI, provider);
 
     console.log(`Listening for events from contract at: ${contractAddress}`);
 
-    contract.on("TestEvent", (arg1: string, arg2: string, event: any) => {
-        console.log(`Event received: ${arg1}, ${arg2}`);
-        console.log("Full Event:", event);
-    });
+    contract.on(
+        "MarketReadyForResolution",
+        (
+            _marketId: bigint,
+            betTitle: string,
+            outcomes: string[],
+            totalPool: bigint,
+            creator: `0x${string}`,
+            category: bigint
+        ) => {
+            console.log(`Market ID: ${_marketId}`);
+            console.log(`Bet Title: ${betTitle}`);
+            console.log(`Outcomes: ${outcomes}`);
+            console.log(`Total Pool: ${totalPool}`);
+            console.log(`Creator: ${creator}`);
+            console.log(`Category: ${category}`);
+        }
+    );
 };
 
 main().catch((error) => {
