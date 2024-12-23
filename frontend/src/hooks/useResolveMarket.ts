@@ -1,18 +1,10 @@
-// src/hooks/useCreateMarket.ts
 import { useState } from "react";
 import { useWriteContract, useAccount, usePublicClient } from "wagmi";
-import { parseEther } from "ethers";
-import { BET_ABI } from "@/utils/bet-abi";
-import { MARKET_CATEGORY } from "@/utils/util";
 import { handleContractError } from "@/utils/errors";
+import { BET_ABI } from "@/utils/bet-abi";
 
-interface CreateMarketOptions {
-    marketTitle: string;
-    description: string;
-    betDeadline: Date;
-    resolutionDeadline: Date;
-    outcomes: { name: string; probability?: number }[];
-    category: string;
+interface ResolveMarketOptions {
+    marketId: number;
     openModal?: (options: {
         message: string;
         type: "info" | "success" | "error";
@@ -20,80 +12,48 @@ interface CreateMarketOptions {
     onSuccess?: () => void;
 }
 
-interface CreateMarketResult {
+interface ResolveMarketResult {
     success: boolean;
     transactionHash?: `0x${string}`;
     error?: ReturnType<typeof handleContractError>;
 }
 
-export const useCreateMarket = () => {
-    const [isCreating, setIsCreating] = useState(false);
+export const useResolveMarket = () => {
+    const [isResolving, setIsResolving] = useState(false);
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
     const account = useAccount();
 
-    const createMarket = async ({
-        marketTitle,
-        description,
-        betDeadline,
-        resolutionDeadline,
-        outcomes,
-        category,
+    const resolveMarket = async ({
+        marketId,
         openModal,
         onSuccess,
-    }: CreateMarketOptions): Promise<CreateMarketResult> => {
+    }: ResolveMarketOptions): Promise<ResolveMarketResult> => {
         // Validate wallet connection
         if (!account.isConnected) {
             openModal?.({
-                message: "Sign in to Create Market",
+                message: "Please connect your wallet",
                 type: "info",
             });
             return { success: false };
         }
 
-        // Prepare market category
-        const mktCatLw = MARKET_CATEGORY.map((c) => String(c).toLowerCase());
-        const selectedCategory = mktCatLw.indexOf(
-            String(category).toLowerCase()
-        );
-
-        // Prepare market arguments
-        const marketArgs: [
-            string,
-            string,
-            bigint,
-            bigint,
-            readonly string[],
-            number
-        ] = [
-            marketTitle,
-            description,
-            BigInt(Math.floor(betDeadline.getTime() / 1000)),
-            BigInt(Math.floor(resolutionDeadline.getTime() / 1000)),
-            outcomes.map((c) => c.name) as readonly string[],
-            selectedCategory,
-        ];
-
-        // Market creation fee
-        const marketCreationFee = parseEther("0.01");
-
         try {
-            setIsCreating(true);
+            setIsResolving(true);
 
             openModal?.({
-                message: "Confirming market creation...",
+                message: "Processing market resolution...",
                 type: "info",
             });
 
-            // Execute market creation transaction
+            // Execute market resolution transaction
             const txResult = await writeContractAsync({
                 abi: BET_ABI,
                 address: `0x${String(
                     import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
                 ).substring(2)}`,
-                functionName: "createMarket",
-                args: marketArgs,
-                value: marketCreationFee,
+                functionName: "resolveMarket",
+                args: [BigInt(marketId)],
             });
 
             // Wait for transaction receipt
@@ -105,7 +65,7 @@ export const useCreateMarket = () => {
 
             if (receipt?.status === "success") {
                 openModal?.({
-                    message: "Market created successfully",
+                    message: "Market resolved successfully",
                     type: "success",
                 });
 
@@ -144,12 +104,12 @@ export const useCreateMarket = () => {
                 error: translatedError,
             };
         } finally {
-            setIsCreating(false);
+            setIsResolving(false);
         }
     };
 
     return {
-        createMarket,
-        isCreating,
+        resolveMarket,
+        isResolving,
     };
 };

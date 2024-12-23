@@ -10,6 +10,9 @@ import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { parseEther } from "ethers";
 import { useMarkets } from "@/context/MarketsContext";
+import { MarketOutcomeItem } from "@/components/MarketOutcome";
+import { useClaimWinnings } from "@/hooks/useClaimWinnings";
+import { useResolveMarket } from "@/hooks/useResolveMarket";
 
 export const MarketDetailsPage: React.FC = () => {
     const { markets, isLoading, error } = useMarkets();
@@ -22,6 +25,9 @@ export const MarketDetailsPage: React.FC = () => {
     const [betAmount, setBetAmount] = useState<bigint>(0n);
 
     const { placeBet } = usePlaceBet();
+    const { claimWinnings } = useClaimWinnings();
+    const { resolveMarket } = useResolveMarket();
+
     const { openModal } = useCustomModal();
 
     // Convert id to number for comparison
@@ -89,6 +95,40 @@ export const MarketDetailsPage: React.FC = () => {
                 setSelectedOutcome(null);
                 setBetAmount(0n);
             },
+        });
+    };
+
+    const handleClaimWinnings = async () => {
+        if (!market) {
+            openModal({
+                message: "Market not found",
+                type: "error",
+            });
+            return;
+        }
+        await claimWinnings({
+            marketId: Number(market.id),
+            openModal,
+            onSuccess: () => {
+                setSelectedOutcome(null);
+                setBetAmount(0n);
+            },
+        });
+    };
+
+    const handleResolveMarket = async () => {
+        if (!market) {
+            openModal({
+                message: "Market not found",
+                type: "error",
+            });
+            return;
+        }
+
+        await resolveMarket({
+            marketId: Number(market.id),
+            openModal,
+            onSuccess: () => {},
         });
     };
 
@@ -185,7 +225,27 @@ export const MarketDetailsPage: React.FC = () => {
                 </div>
 
                 <div className="text-white flex flex-col w-full justify-center items-center space-y-2">
-                    <p className="font-bold mr-auto">Select Outcome</p>
+                    <p className="flex w-full justify-between items-center">
+                        <span className="font-bold mr-auto">
+                            Select Outcome
+                        </span>
+
+                        <button
+                            disabled={
+                                Number(market.resolutionDeadline) >
+                                Date.now() / 1000
+                            }
+                            className="ml-auto px-4 py-1 text-sm bg-white text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={handleResolveMarket}
+                        >
+                            Resolve Market
+                        </button>
+                        {market.resolved && (
+                            <span className="text-white bg-[#1f1f1f] text-sm px-4 py-1 rounded-lg">
+                                Resolved
+                            </span>
+                        )}
+                    </p>
                     <div className="w-full relative">
                         <button
                             onClick={() => setIsOutcomeOpen(!isOutcomeOpen)}
@@ -228,29 +288,12 @@ export const MarketDetailsPage: React.FC = () => {
                         )}
                     </div>
 
-                    {market.outcomes.map((outcome, index) => (
-                        <button
-                            key={index}
-                            className="py-2 px-3 flex justify-between border w-full rounded-lg transition-all duration-300 hover:bg-[#202020] hover:bg-opacity-40"
-                        >
-                            <span className="flex flex-col space-y-1 mr-auto">
-                                <span className="text-sm text-left">
-                                    {outcome}
-                                </span>
-                                <span className="text-gray-600 text-sm text-left">
-                                    Pool Share:{" "}
-                                    {Math.floor(Math.random() * 100)}%
-                                </span>
-                            </span>
-                            <span className="flex flex-col space-y-1 ml-auto">
-                                <span className="text-sm text-right text-green-600">
-                                    {(1 + Math.random() * 2).toFixed(2)}
-                                </span>
-                                <span className="text-gray-600 text-sm text-left">
-                                    Current Odds
-                                </span>
-                            </span>
-                        </button>
+                    {market.outcomes.map((outcome) => (
+                        <MarketOutcomeItem
+                            key={outcome}
+                            outcome={outcome}
+                            marketId={BigInt(market.id)}
+                        />
                     ))}
                 </div>
 
@@ -282,6 +325,17 @@ export const MarketDetailsPage: React.FC = () => {
                            disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {!selectedOutcome ? "Select Outcome" : "Place Bet"}
+                    </button>
+                </div>
+                <div className="flex w-full">
+                    <button
+                        onClick={handleClaimWinnings}
+                        disabled={!market.resolved}
+                        className="w-full bg-white text-black py-2 rounded-xl 
+                           hover:bg-gray-300 transition-colors duration-300 font-bold
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {!market.resolved ? "Claim Winnings" : "Claim Winnings"}
                     </button>
                 </div>
             </motion.div>

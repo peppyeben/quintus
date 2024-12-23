@@ -1,649 +1,630 @@
 export const BET_ABI = [
     {
+        type: "constructor",
         inputs: [
             {
-                internalType: "address",
                 name: "_oracle",
                 type: "address",
+                internalType: "address",
             },
         ],
         stateMutability: "nonpayable",
-        type: "constructor",
     },
     {
+        type: "function",
+        name: "CREATOR_FEE",
         inputs: [],
-        type: "error",
-        name: "BettingAmountCannotBeZero",
+        outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+        stateMutability: "view",
     },
     {
+        type: "function",
+        name: "MARKET_CREATION_FEE",
         inputs: [],
-        type: "error",
-        name: "BettingDeadlinePassed",
+        outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+        stateMutability: "view",
     },
-    { inputs: [], type: "error", name: "InsufficientFee" },
     {
+        type: "function",
+        name: "PLATFORM_FEE",
         inputs: [],
-        type: "error",
-        name: "InsufficientOutcomes",
-    },
-    { inputs: [], type: "error", name: "InvalidBetDeadline" },
-    { inputs: [], type: "error", name: "InvalidOutcome" },
-    {
-        inputs: [],
-        type: "error",
-        name: "InvalidResolutionDeadline",
+        outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+        stateMutability: "view",
     },
     {
-        inputs: [],
-        type: "error",
-        name: "MarketAlreadyResolved",
-    },
-    { inputs: [], type: "error", name: "MarketNotCreated" },
-    { inputs: [], type: "error", name: "MarketNotResolved" },
-    {
-        inputs: [],
-        type: "error",
-        name: "NoBetsOnWinningOutcome",
-    },
-    { inputs: [], type: "error", name: "NoWinningsToClaim" },
-    {
+        type: "function",
+        name: "claimWinnings",
         inputs: [
             {
-                internalType: "address",
-                name: "owner",
-                type: "address",
-            },
-        ],
-        type: "error",
-        name: "OwnableInvalidOwner",
-    },
-    {
-        inputs: [
-            {
-                internalType: "address",
-                name: "account",
-                type: "address",
-            },
-        ],
-        type: "error",
-        name: "OwnableUnauthorizedAccount",
-    },
-    {
-        inputs: [],
-        type: "error",
-        name: "ReentrancyGuardReentrantCall",
-    },
-    { inputs: [], type: "error", name: "TooEarlyToResolve" },
-    { inputs: [], type: "error", name: "TransferFailed" },
-    { inputs: [], type: "error", name: "UnauthorizedOracle" },
-    {
-        inputs: [
-            {
+                name: "_marketId",
+                type: "uint256",
                 internalType: "uint256",
+            },
+        ],
+        outputs: [],
+        stateMutability: "nonpayable",
+    },
+    {
+        type: "function",
+        name: "createMarket",
+        inputs: [
+            {
+                name: "_betTitle",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "_description",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "_betDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_resolutionDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_outcomes",
+                type: "string[]",
+                internalType: "string[]",
+            },
+            {
+                name: "_category",
+                type: "uint8",
+                internalType: "enum QuintusMarket.MarketCategory",
+            },
+        ],
+        outputs: [],
+        stateMutability: "payable",
+    },
+    {
+        type: "function",
+        name: "getAllMarkets",
+        inputs: [],
+        outputs: [
+            {
+                name: "marketIds",
+                type: "uint256[]",
+                internalType: "uint256[]",
+            },
+            {
+                name: "betTitles",
+                type: "string[]",
+                internalType: "string[]",
+            },
+            {
+                name: "descriptions",
+                type: "string[]",
+                internalType: "string[]",
+            },
+            {
+                name: "betDeadlines",
+                type: "uint256[]",
+                internalType: "uint256[]",
+            },
+            {
+                name: "resolutionDeadlines",
+                type: "uint256[]",
+                internalType: "uint256[]",
+            },
+            {
+                name: "creators",
+                type: "address[]",
+                internalType: "address[]",
+            },
+            {
+                name: "resolved",
+                type: "bool[]",
+                internalType: "bool[]",
+            },
+            {
+                name: "outcomes",
+                type: "string[][]",
+                internalType: "string[][]",
+            },
+            {
+                name: "totalPools",
+                type: "uint256[]",
+                internalType: "uint256[]",
+            },
+            {
+                name: "winningOutcomes",
+                type: "string[]",
+                internalType: "string[]",
+            },
+            {
+                name: "categories",
+                type: "uint8[]",
+                internalType: "enum QuintusMarket.MarketCategory[]",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "getMarketBets",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_outcome",
+                type: "string",
+                internalType: "string",
+            },
+        ],
+        outputs: [
+            {
+                name: "totalBetsForOutcome",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "outcomeWeight",
+                type: "uint256",
+                internalType: "uint256",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "getMarketInfo",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+        ],
+        outputs: [
+            {
+                name: "betTitle",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "description",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "betDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "resolutionDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "creator",
+                type: "address",
+                internalType: "address",
+            },
+            { name: "resolved", type: "bool", internalType: "bool" },
+            {
+                name: "outcomes",
+                type: "string[]",
+                internalType: "string[]",
+            },
+            {
+                name: "totalPool",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "winningOutcome",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "category",
+                type: "uint8",
+                internalType: "enum QuintusMarket.MarketCategory",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "marketCount",
+        inputs: [],
+        outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "markets",
+        inputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+        outputs: [
+            {
+                name: "betTitle",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "description",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "betDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "resolutionDeadline",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "creator",
+                type: "address",
+                internalType: "address",
+            },
+            { name: "resolved", type: "bool", internalType: "bool" },
+            {
+                name: "totalPool",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "winningOutcome",
+                type: "string",
+                internalType: "string",
+            },
+            { name: "paid", type: "bool", internalType: "bool" },
+            {
+                name: "category",
+                type: "uint8",
+                internalType: "enum QuintusMarket.MarketCategory",
+            },
+            {
+                name: "marketCreated",
+                type: "bool",
+                internalType: "bool",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "oracle",
+        inputs: [],
+        outputs: [
+            {
+                name: "",
+                type: "address",
+                internalType: "contract QuintusOracles",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "owner",
+        inputs: [],
+        outputs: [{ name: "", type: "address", internalType: "address" }],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
+        name: "placeBet",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_outcome",
+                type: "string",
+                internalType: "string",
+            },
+        ],
+        outputs: [],
+        stateMutability: "payable",
+    },
+    {
+        type: "function",
+        name: "renounceOwnership",
+        inputs: [],
+        outputs: [],
+        stateMutability: "nonpayable",
+    },
+    {
+        type: "function",
+        name: "resolveBet",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_outcome",
+                type: "string",
+                internalType: "string",
+            },
+        ],
+        outputs: [],
+        stateMutability: "nonpayable",
+    },
+    {
+        type: "function",
+        name: "resolveMarket",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+        ],
+        outputs: [],
+        stateMutability: "nonpayable",
+    },
+    {
+        type: "function",
+        name: "transferOwnership",
+        inputs: [
+            {
+                name: "newOwner",
+                type: "address",
+                internalType: "address",
+            },
+        ],
+        outputs: [],
+        stateMutability: "nonpayable",
+    },
+    {
+        type: "function",
+        name: "userBets",
+        inputs: [
+            { name: "", type: "uint256", internalType: "uint256" },
+            { name: "", type: "address", internalType: "address" },
+            { name: "", type: "uint256", internalType: "uint256" },
+        ],
+        outputs: [
+            {
+                name: "amount",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "outcome",
+                type: "string",
+                internalType: "string",
+            },
+            {
+                name: "status",
+                type: "uint8",
+                internalType: "enum QuintusMarket.BetStatus",
+            },
+            {
+                name: "potentialWinnings",
+                type: "uint256",
+                internalType: "uint256",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "event",
+        name: "BetPlaced",
+        inputs: [
+            {
                 name: "marketId",
                 type: "uint256",
                 indexed: true,
+                internalType: "uint256",
             },
             {
-                internalType: "address",
                 name: "user",
                 type: "address",
                 indexed: false,
+                internalType: "address",
             },
             {
-                internalType: "string",
                 name: "outcome",
                 type: "string",
                 indexed: false,
+                internalType: "string",
             },
             {
-                internalType: "uint256",
                 name: "amount",
                 type: "uint256",
                 indexed: false,
+                internalType: "uint256",
             },
         ],
-        type: "event",
-        name: "BetPlaced",
         anonymous: false,
     },
     {
+        type: "event",
+        name: "MarketCreated",
         inputs: [
             {
-                internalType: "uint256",
                 name: "marketId",
                 type: "uint256",
                 indexed: true,
+                internalType: "uint256",
             },
             {
-                internalType: "string",
                 name: "betTitle",
                 type: "string",
                 indexed: false,
+                internalType: "string",
             },
             {
-                internalType: "address",
                 name: "creator",
                 type: "address",
                 indexed: false,
+                internalType: "address",
             },
             {
-                internalType: "enum QuintusMarket.MarketCategory",
                 name: "category",
                 type: "uint8",
                 indexed: false,
+                internalType: "enum QuintusMarket.MarketCategory",
             },
         ],
-        type: "event",
-        name: "MarketCreated",
         anonymous: false,
     },
     {
+        type: "event",
+        name: "MarketReadyForResolution",
         inputs: [
             {
-                internalType: "uint256",
                 name: "marketId",
                 type: "uint256",
                 indexed: true,
+                internalType: "uint256",
             },
             {
-                internalType: "string",
-                name: "winningOutcome",
+                name: "betTitle",
                 type: "string",
                 indexed: false,
+                internalType: "string",
+            },
+            {
+                name: "outcomes",
+                type: "string[]",
+                indexed: false,
+                internalType: "string[]",
+            },
+            {
+                name: "totalPool",
+                type: "uint256",
+                indexed: false,
+                internalType: "uint256",
+            },
+            {
+                name: "creator",
+                type: "address",
+                indexed: false,
+                internalType: "address",
+            },
+            {
+                name: "category",
+                type: "uint8",
+                indexed: false,
+                internalType: "enum QuintusMarket.MarketCategory",
             },
         ],
-        type: "event",
-        name: "MarketResolved",
         anonymous: false,
     },
     {
+        type: "event",
+        name: "MarketResolved",
         inputs: [
             {
-                internalType: "address",
+                name: "marketId",
+                type: "uint256",
+                indexed: true,
+                internalType: "uint256",
+            },
+            {
+                name: "winningOutcome",
+                type: "string",
+                indexed: false,
+                internalType: "string",
+            },
+        ],
+        anonymous: false,
+    },
+    {
+        type: "event",
+        name: "OwnershipTransferred",
+        inputs: [
+            {
                 name: "previousOwner",
                 type: "address",
                 indexed: true,
+                internalType: "address",
             },
             {
-                internalType: "address",
                 name: "newOwner",
                 type: "address",
                 indexed: true,
+                internalType: "address",
             },
         ],
-        type: "event",
-        name: "OwnershipTransferred",
         anonymous: false,
     },
     {
+        type: "event",
+        name: "WinningsClaimed",
         inputs: [
             {
-                internalType: "uint256",
                 name: "marketId",
                 type: "uint256",
                 indexed: true,
+                internalType: "uint256",
             },
             {
-                internalType: "address",
                 name: "user",
                 type: "address",
                 indexed: false,
+                internalType: "address",
             },
             {
-                internalType: "uint256",
                 name: "amount",
                 type: "uint256",
                 indexed: false,
+                internalType: "uint256",
             },
         ],
-        type: "event",
-        name: "WinningsClaimed",
         anonymous: false,
     },
+    { type: "error", name: "BettingAmountCannotBeZero", inputs: [] },
+    { type: "error", name: "BettingDeadlinePassed", inputs: [] },
+    { type: "error", name: "InsufficientFee", inputs: [] },
+    { type: "error", name: "InsufficientOutcomes", inputs: [] },
+    { type: "error", name: "InvalidBetDeadline", inputs: [] },
+    { type: "error", name: "InvalidOutcome", inputs: [] },
+    { type: "error", name: "InvalidResolutionDeadline", inputs: [] },
+    { type: "error", name: "MarketAlreadyResolved", inputs: [] },
+    { type: "error", name: "MarketNotCreated", inputs: [] },
+    { type: "error", name: "MarketNotResolved", inputs: [] },
+    { type: "error", name: "NoBetsOnWinningOutcome", inputs: [] },
+    { type: "error", name: "NoWinningsToClaim", inputs: [] },
     {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "CREATOR_FEE",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-    },
-    {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "MARKET_CREATION_FEE",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-    },
-    {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "PLATFORM_FEE",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-    },
-    {
+        type: "error",
+        name: "OwnableInvalidOwner",
         inputs: [
             {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-        ],
-        stateMutability: "nonpayable",
-        type: "function",
-        name: "claimWinnings",
-    },
-    {
-        inputs: [
-            {
-                internalType: "string",
-                name: "_betTitle",
-                type: "string",
-            },
-            {
-                internalType: "string",
-                name: "_description",
-                type: "string",
-            },
-            {
-                internalType: "uint256",
-                name: "_betDeadline",
-                type: "uint256",
-            },
-            {
-                internalType: "uint256",
-                name: "_resolutionDeadline",
-                type: "uint256",
-            },
-            {
-                internalType: "string[]",
-                name: "_outcomes",
-                type: "string[]",
-            },
-            {
-                internalType: "enum QuintusMarket.MarketCategory",
-                name: "_category",
-                type: "uint8",
-            },
-        ],
-        stateMutability: "payable",
-        type: "function",
-        name: "createMarket",
-    },
-    {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "getAllMarkets",
-        outputs: [
-            {
-                internalType: "uint256[]",
-                name: "marketIds",
-                type: "uint256[]",
-            },
-            {
-                internalType: "string[]",
-                name: "betTitles",
-                type: "string[]",
-            },
-            {
-                internalType: "string[]",
-                name: "descriptions",
-                type: "string[]",
-            },
-            {
-                internalType: "uint256[]",
-                name: "betDeadlines",
-                type: "uint256[]",
-            },
-            {
-                internalType: "uint256[]",
-                name: "resolutionDeadlines",
-                type: "uint256[]",
-            },
-            {
-                internalType: "address[]",
-                name: "creators",
-                type: "address[]",
-            },
-            {
-                internalType: "bool[]",
-                name: "resolved",
-                type: "bool[]",
-            },
-            {
-                internalType: "string[][]",
-                name: "outcomes",
-                type: "string[][]",
-            },
-            {
-                internalType: "string[]",
-                name: "winningOutcomes",
-                type: "string[]",
-            },
-            {
-                internalType: "enum QuintusMarket.MarketCategory[]",
-                name: "categories",
-                type: "uint8[]",
-            },
-        ],
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-            {
-                internalType: "string",
-                name: "_outcome",
-                type: "string",
-            },
-        ],
-        stateMutability: "view",
-        type: "function",
-        name: "getMarketBets",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-        ],
-        stateMutability: "view",
-        type: "function",
-        name: "getMarketInfo",
-        outputs: [
-            {
-                internalType: "string",
-                name: "betTitle",
-                type: "string",
-            },
-            {
-                internalType: "string",
-                name: "description",
-                type: "string",
-            },
-            {
-                internalType: "uint256",
-                name: "betDeadline",
-                type: "uint256",
-            },
-            {
-                internalType: "uint256",
-                name: "resolutionDeadline",
-                type: "uint256",
-            },
-            {
+                name: "owner",
+                type: "address",
                 internalType: "address",
-                name: "creator",
-                type: "address",
-            },
-            {
-                internalType: "bool",
-                name: "resolved",
-                type: "bool",
-            },
-            {
-                internalType: "string[]",
-                name: "outcomes",
-                type: "string[]",
-            },
-            {
-                internalType: "string",
-                name: "winningOutcome",
-                type: "string",
-            },
-            {
-                internalType: "enum QuintusMarket.MarketCategory",
-                name: "category",
-                type: "uint8",
             },
         ],
     },
     {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "marketCount",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-    },
-    {
+        type: "error",
+        name: "OwnableUnauthorizedAccount",
         inputs: [
             {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-        stateMutability: "view",
-        type: "function",
-        name: "markets",
-        outputs: [
-            {
-                internalType: "string",
-                name: "betTitle",
-                type: "string",
-            },
-            {
-                internalType: "string",
-                name: "description",
-                type: "string",
-            },
-            {
-                internalType: "uint256",
-                name: "betDeadline",
-                type: "uint256",
-            },
-            {
-                internalType: "uint256",
-                name: "resolutionDeadline",
-                type: "uint256",
-            },
-            {
+                name: "account",
+                type: "address",
                 internalType: "address",
-                name: "creator",
-                type: "address",
-            },
-            {
-                internalType: "bool",
-                name: "resolved",
-                type: "bool",
-            },
-            {
-                internalType: "uint256",
-                name: "totalPool",
-                type: "uint256",
-            },
-            {
-                internalType: "string",
-                name: "winningOutcome",
-                type: "string",
-            },
-            {
-                internalType: "bool",
-                name: "paid",
-                type: "bool",
-            },
-            {
-                internalType: "enum QuintusMarket.MarketCategory",
-                name: "category",
-                type: "uint8",
-            },
-            {
-                internalType: "bool",
-                name: "marketCreated",
-                type: "bool",
             },
         ],
     },
     {
+        type: "error",
+        name: "ReentrancyGuardReentrantCall",
         inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "oracle",
-        outputs: [
-            {
-                internalType: "contract QuintusOracles",
-                name: "",
-                type: "address",
-            },
-        ],
     },
-    {
-        inputs: [],
-        stateMutability: "view",
-        type: "function",
-        name: "owner",
-        outputs: [
-            {
-                internalType: "address",
-                name: "",
-                type: "address",
-            },
-        ],
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-            {
-                internalType: "string",
-                name: "_outcome",
-                type: "string",
-            },
-        ],
-        stateMutability: "payable",
-        type: "function",
-        name: "placeBet",
-    },
-    {
-        inputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-        name: "renounceOwnership",
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-            {
-                internalType: "string",
-                name: "_outcome",
-                type: "string",
-            },
-        ],
-        stateMutability: "nonpayable",
-        type: "function",
-        name: "resolveBet",
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "_marketId",
-                type: "uint256",
-            },
-        ],
-        stateMutability: "nonpayable",
-        type: "function",
-        name: "resolveMarket",
-    },
-    {
-        inputs: [
-            {
-                internalType: "address",
-                name: "newOwner",
-                type: "address",
-            },
-        ],
-        stateMutability: "nonpayable",
-        type: "function",
-        name: "transferOwnership",
-    },
-    {
-        inputs: [
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-            {
-                internalType: "address",
-                name: "",
-                type: "address",
-            },
-            {
-                internalType: "uint256",
-                name: "",
-                type: "uint256",
-            },
-        ],
-        stateMutability: "view",
-        type: "function",
-        name: "userBets",
-        outputs: [
-            {
-                internalType: "uint256",
-                name: "amount",
-                type: "uint256",
-            },
-            {
-                internalType: "string",
-                name: "outcome",
-                type: "string",
-            },
-            {
-                internalType: "enum QuintusMarket.BetStatus",
-                name: "status",
-                type: "uint8",
-            },
-            {
-                internalType: "uint256",
-                name: "potentialWinnings",
-                type: "uint256",
-            },
-        ],
-    },
+    { type: "error", name: "TooEarlyToResolve", inputs: [] },
+    { type: "error", name: "TransferFailed", inputs: [] },
+    { type: "error", name: "UnauthorizedOracle", inputs: [] },
 ] as const;

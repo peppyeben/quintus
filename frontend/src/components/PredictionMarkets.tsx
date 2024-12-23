@@ -7,7 +7,7 @@ import { PaginatedOutcomes } from "./PaginatedOutcomes";
 import { TbBrandBinance } from "react-icons/tb";
 import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useCustomModal } from "@/context/CustomModalContext";
-import { parseEther } from "ethers";
+import { parseEther, formatUnits } from "ethers";
 
 interface PredictionMarketsProps extends Market {
     openModal?: (options: {
@@ -22,6 +22,7 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
     category,
     outcomes,
     id,
+    totalPool,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
@@ -70,14 +71,14 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
             setBetAmount(BigInt(amount));
         } catch (error) {
             setBetAmount(0n);
-            console.error(error)
+            console.error(error);
         }
     };
 
     return (
         <div
             onClick={() => navigate(`/markets/${id}`)}
-            className="flex flex-col cursor-pointer justify-center items-start rounded-xl p-3 max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2"
+            className="flex flex-col cursor-pointer justify-start items-start rounded-xl p-3 max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2"
         >
             <section className="flex w-full justify-start items-center">
                 <p className="bg-white text-black rounded-full py-1 px-3 text-xs">
@@ -94,7 +95,10 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
                 <section className="flex justify-between w-full pt-4">
                     <p className="flex flex-col items-start space-y-1">
                         <span className="text-gray-200">Total Pool</span>
-                        <span className="text-white font-bold">$300</span>
+                        <span className="text-white font-bold flex space-x-1">
+                            <TbBrandBinance className="text-[#F3BA2F] text-lg m-auto" />
+                            <span>{formatUnits(totalPool.toString())}</span>
+                        </span>
                     </p>
                     <PaginatedOutcomes outcomes={outcomes} />
                 </section>

@@ -55,7 +55,7 @@ export const MarketsProvider: React.FC<{ children: ReactNode }> = ({
         if (allMarketsData) {
             try {
                 const parsedMarkets = parseMarkets(
-                    allMarketsData as RawMarketData
+                    allMarketsData as unknown as RawMarketData
                 );
                 setAllMarkets(parsedMarkets);
                 setIsLoading(false);

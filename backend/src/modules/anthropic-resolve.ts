@@ -9,89 +9,67 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API });
 
 async function resolveBetWithAI(
     title: string,
-    description: string,
     data: string,
     outcomes: string[]
 ) {
     try {
+        const prompt = `
+        You are an AI assistant designed to analyze blog posts, queries, and outcomes. 
+        Based on the provided blog post and query, select the most suitable outcome from the list. 
+        If no conclusion can be drawn, return "null". Provide only the outcome as the response.
+
+        Blog Post: "${data}"
+        Query: "${title}"
+        Outcomes: ${outcomes.join(", ")}
+        `;
+
         const response = await anthropic.messages.create({
             model: "claude-3-5-haiku-latest",
-            max_tokens: 10,
-            messages: [
-                {
-                    role: "user",
-                    content: `PREDICTION RESOLUTION:
-
-ANALYZE CAREFULLY:
-- Title: ${title}
-- Detailed Content: ${data}
-
-STRICT REQUIREMENTS:
-- Determine if the prediction in the title occurred
-- Return ONLY: ${outcomes.join(", ")}
-- Base decision on ENTIRE content
-- No explanations
-
-CORE QUESTION:
-Did the event happen?`,
-                },
-            ],
+            max_tokens: 50,
+            messages: [{ role: "user", content: prompt }],
         });
 
-        // Extract the outcome
         const rawOutcome = response.content[0];
         const outcomeText =
             typeof rawOutcome === "object" && "text" in rawOutcome
                 ? rawOutcome.text.trim()
                 : "";
 
-        // Validate and map outcome
         const validatedOutcome = outcomes.find(
-            (o) =>
-                outcomeText.includes(o) ||
-                outcomeText.toLowerCase() === o.toLowerCase()
+            (o) => o.toLowerCase() === outcomeText.toLowerCase()
         );
-
-        // Fallback for clear title matches
-        if (!validatedOutcome) {
-            const titleLower = title.toLowerCase();
-            if (
-                titleLower.includes("hits $100,000") ||
-                titleLower.includes("hit $100,000") ||
-                titleLower.includes("surpasses $100,000")
-            ) {
-                return {
-                    title,
-                    outcome: "True",
-                };
-            }
-        }
 
         return {
             title,
-            outcome: validatedOutcome || outcomes[0],
+            outcome: validatedOutcome || "null",
         };
     } catch (error) {
         console.error(`Error processing prediction: ${title}`, error);
         return {
             title,
-            outcome: outcomes[0],
+            outcome: "Error",
         };
     }
 }
 
-async function processArticles(articles: any, outcomes: any) {
+async function processArticles(
+    articles: { title: string; description?: string }[],
+    outcomes: string[]
+) {
     const results = [];
 
     for (const article of articles) {
-        const result = await resolveBetWithAI(
-            article.title,
-            article.description || "No specific description provided",
-            article.content,
-            outcomes
-        );
-
-        results.push(result);
+        try {
+            const result = await resolveBetWithAI(
+                article.title,
+                article.description || "No description available",
+                outcomes
+            );
+            results.push(result);
+        } catch (error) {
+            console.error(`Error processing article: ${article.title}`, error);
+            results.push({ title: article.title, outcome: "Error" });
+        }
     }
 
     return results;
@@ -100,6 +78,5 @@ async function processArticles(articles: any, outcomes: any) {
 (async () => {
     const articles = await processSearchResults(SEARCH_RESULTS);
     const results = await processArticles(articles, ["True", "False"]);
-
     console.log("Processed Results:", results);
 })();

@@ -1,18 +1,10 @@
-// src/hooks/useCreateMarket.ts
 import { useState } from "react";
 import { useWriteContract, useAccount, usePublicClient } from "wagmi";
-import { parseEther } from "ethers";
-import { BET_ABI } from "@/utils/bet-abi";
-import { MARKET_CATEGORY } from "@/utils/util";
 import { handleContractError } from "@/utils/errors";
+import { BET_ABI } from "@/utils/bet-abi";
 
-interface CreateMarketOptions {
-    marketTitle: string;
-    description: string;
-    betDeadline: Date;
-    resolutionDeadline: Date;
-    outcomes: { name: string; probability?: number }[];
-    category: string;
+interface ClaimWinningsOptions {
+    marketId: number;
     openModal?: (options: {
         message: string;
         type: "info" | "success" | "error";
@@ -20,80 +12,48 @@ interface CreateMarketOptions {
     onSuccess?: () => void;
 }
 
-interface CreateMarketResult {
+interface ClaimWinningsResult {
     success: boolean;
     transactionHash?: `0x${string}`;
     error?: ReturnType<typeof handleContractError>;
 }
 
-export const useCreateMarket = () => {
-    const [isCreating, setIsCreating] = useState(false);
+export const useClaimWinnings = () => {
+    const [isClaiming, setIsClaiming] = useState(false);
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
     const account = useAccount();
 
-    const createMarket = async ({
-        marketTitle,
-        description,
-        betDeadline,
-        resolutionDeadline,
-        outcomes,
-        category,
+    const claimWinnings = async ({
+        marketId,
         openModal,
         onSuccess,
-    }: CreateMarketOptions): Promise<CreateMarketResult> => {
+    }: ClaimWinningsOptions): Promise<ClaimWinningsResult> => {
         // Validate wallet connection
         if (!account.isConnected) {
             openModal?.({
-                message: "Sign in to Create Market",
+                message: "Please connect your wallet",
                 type: "info",
             });
             return { success: false };
         }
 
-        // Prepare market category
-        const mktCatLw = MARKET_CATEGORY.map((c) => String(c).toLowerCase());
-        const selectedCategory = mktCatLw.indexOf(
-            String(category).toLowerCase()
-        );
-
-        // Prepare market arguments
-        const marketArgs: [
-            string,
-            string,
-            bigint,
-            bigint,
-            readonly string[],
-            number
-        ] = [
-            marketTitle,
-            description,
-            BigInt(Math.floor(betDeadline.getTime() / 1000)),
-            BigInt(Math.floor(resolutionDeadline.getTime() / 1000)),
-            outcomes.map((c) => c.name) as readonly string[],
-            selectedCategory,
-        ];
-
-        // Market creation fee
-        const marketCreationFee = parseEther("0.01");
-
         try {
-            setIsCreating(true);
+            setIsClaiming(true);
 
             openModal?.({
-                message: "Confirming market creation...",
+                message: "Processing winnings claim...",
                 type: "info",
             });
 
-            // Execute market creation transaction
+            // Execute winnings claim transaction
             const txResult = await writeContractAsync({
                 abi: BET_ABI,
                 address: `0x${String(
                     import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
                 ).substring(2)}`,
-                functionName: "createMarket",
-                args: marketArgs,
-                value: marketCreationFee,
+                functionName: "claimWinnings",
+                args: [BigInt(marketId)],
             });
 
             // Wait for transaction receipt
@@ -105,7 +65,7 @@ export const useCreateMarket = () => {
 
             if (receipt?.status === "success") {
                 openModal?.({
-                    message: "Market created successfully",
+                    message: "Winnings claimed successfully",
                     type: "success",
                 });
 
@@ -144,12 +104,12 @@ export const useCreateMarket = () => {
                 error: translatedError,
             };
         } finally {
-            setIsCreating(false);
+            setIsClaiming(false);
         }
     };
 
     return {
-        createMarket,
-        isCreating,
+        claimWinnings,
+        isClaiming,
     };
 };

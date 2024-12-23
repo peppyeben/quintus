@@ -6,9 +6,11 @@ export interface Market {
     description: string;
     betDeadline: bigint;
     resolutionDeadline: bigint;
-    creator: string;
+    creator: `0x${string}`;
+    // creator: string;
     resolved: boolean;
     outcomes: string[];
+    totalPool: bigint;
     winningOutcome: string;
     category: bigint;
 }
@@ -20,9 +22,11 @@ export type RawMarketData = [
     string[], // descriptions
     bigint[], // betDeadlines
     bigint[], // resolutionDeadlines
-    string[], // creators
+    // string[], // creators
+    `0x${string}`[], // creators
     boolean[], // resolved
     string[][], // outcomes
+    bigint[], // totalPool
     string[], // winningOutcomes
     bigint[] // categories
 ];
@@ -37,6 +41,7 @@ export function parseMarkets(rawMarketData: RawMarketData): Market[] {
         creators,
         resolved,
         outcomes,
+        totalPools,
         winningOutcomes,
         categories,
     ] = rawMarketData;
@@ -50,6 +55,7 @@ export function parseMarkets(rawMarketData: RawMarketData): Market[] {
         creator: creators[index],
         resolved: resolved[index],
         outcomes: outcomes[index],
+        totalPool: totalPools[index],
         winningOutcome: winningOutcomes[index],
         category: categories[index],
     }));
