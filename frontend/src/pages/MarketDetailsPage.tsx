@@ -227,67 +227,70 @@ export const MarketDetailsPage: React.FC = () => {
                 <div className="text-white flex flex-col w-full justify-center items-center space-y-3">
                     <p className="flex w-full justify-between items-center pb-3">
                         <span className="font-bold mr-auto">
-                            Select Outcome
+                            {!market.resolved && <span>Select Outcome</span>}
+                            {market.resolved && <span>Closed</span>}
                         </span>
                         {!market.resolved && (
-                        <button
-                            disabled={
-                                Number(market.resolutionDeadline) >
-                                Date.now() / 1000
-                            }
-                            className="ml-auto px-4 py-1 text-sm bg-white text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={handleResolveMarket}
-                        >
-                            Resolve Market
-                        </button>)}
+                            <button
+                                disabled={
+                                    Number(market.resolutionDeadline) >
+                                    Date.now() / 1000
+                                }
+                                className="ml-auto px-4 py-1 text-sm bg-white text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={handleResolveMarket}
+                            >
+                                Resolve Market
+                            </button>
+                        )}
                         {market.resolved && (
                             <span className="text-white bg-[#1f1f1f] text-sm px-4 py-1 rounded-lg">
                                 Resolved
                             </span>
                         )}
                     </p>
-                    <div className="w-full relative">
-                        <button
-                            onClick={() => setIsOutcomeOpen(!isOutcomeOpen)}
-                            className="w-full text-left text-xs px-3 py-2 rounded-md 
+                    {!market.resolved && (
+                        <div className="w-full relative">
+                            <button
+                                onClick={() => setIsOutcomeOpen(!isOutcomeOpen)}
+                                className="w-full text-left text-xs px-3 py-2 rounded-md 
                             border border-neutral-700 bg-neutral-900
                             flex items-center justify-between
                             hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <span
-                                className={
-                                    selectedOutcome
-                                        ? "text-white"
-                                        : "text-neutral-500"
-                                }
                             >
-                                {selectedOutcome || "Select Outcome"}
-                            </span>
-                            <ChevronDown
-                                className={`w-5 h-5 transition-transform ${
-                                    isOutcomeOpen ? "rotate-180" : ""
-                                }`}
-                            />
-                        </button>
+                                <span
+                                    className={
+                                        selectedOutcome
+                                            ? "text-white"
+                                            : "text-neutral-500"
+                                    }
+                                >
+                                    {selectedOutcome || "Select Outcome"}
+                                </span>
+                                <ChevronDown
+                                    className={`w-5 h-5 transition-transform ${
+                                        isOutcomeOpen ? "rotate-180" : ""
+                                    }`}
+                                />
+                            </button>
 
-                        {isOutcomeOpen && (
-                            <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {market.outcomes.map((outcome) => (
-                                    <div
-                                        key={outcome}
-                                        onClick={() => {
-                                            setSelectedOutcome(outcome);
-                                            setIsOutcomeOpen(false);
-                                        }}
-                                        className="px-3 py-1 cursor-pointer hover:bg-neutral-800 text-white"
-                                    >
-                                        {outcome}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
+                            {isOutcomeOpen && (
+                                <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {market.outcomes.map((outcome) => (
+                                        <div
+                                            key={outcome}
+                                            onClick={() => {
+                                                setSelectedOutcome(outcome);
+                                                setIsOutcomeOpen(false);
+                                            }}
+                                            className="px-3 py-1 cursor-pointer hover:bg-neutral-800 text-white"
+                                        >
+                                            {outcome}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {market.outcomes.map((outcome) => (
                         <MarketOutcomeItem
                             key={outcome}
@@ -296,37 +299,41 @@ export const MarketDetailsPage: React.FC = () => {
                         />
                     ))}
                 </div>
-
-                <div className="flex flex-col space-y-2 text-white">
-                    <p className="font-bold mr-auto">Bet Amount</p>
-                    <p className="relative w-full border border-neutral-700 rounded-lg p-1">
-                        <span className="absolute top-[0.75rem] left-2">
-                            <TbBrandBinance className="text-[#F3BA2F] text-2xl m-auto" />
-                        </span>
-                        <input
-                            type="number"
-                            className="w-full py-2 pl-10 pr-3 text-white placeholder:text-sm border-none outline-none appearance-none bg-transparent"
-                            placeholder="Enter bet amount"
-                            min={0}
-                            step={0.0001}
-                            onChange={handleBetAmountChange}
-                        />
-                    </p>
-                </div>
-
-                <div className="flex w-full">
-                    <button
-                        onClick={handlePlaceBet}
-                        disabled={
-                            !selectedOutcome || !betAmount || betAmount <= 0n
-                        }
-                        className="w-full bg-white text-black py-2 rounded-xl 
+                {!market.resolved && (
+                    <div className="flex flex-col space-y-2 text-white">
+                        <p className="font-bold mr-auto">Bet Amount</p>
+                        <p className="relative w-full border border-neutral-700 rounded-lg p-1">
+                            <span className="absolute top-[0.75rem] left-2">
+                                <TbBrandBinance className="text-[#F3BA2F] text-2xl m-auto" />
+                            </span>
+                            <input
+                                type="number"
+                                className="w-full py-2 pl-10 pr-3 text-white placeholder:text-sm border-none outline-none appearance-none bg-transparent"
+                                placeholder="Enter bet amount"
+                                min={0}
+                                step={0.0001}
+                                onChange={handleBetAmountChange}
+                            />
+                        </p>
+                    </div>
+                )}
+                {!market.resolved && (
+                    <div className="flex w-full">
+                        <button
+                            onClick={handlePlaceBet}
+                            disabled={
+                                !selectedOutcome ||
+                                !betAmount ||
+                                betAmount <= 0n
+                            }
+                            className="w-full bg-white text-black py-2 rounded-xl 
                            hover:bg-gray-300 transition-colors duration-300 font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {!selectedOutcome ? "Select Outcome" : "Place Bet"}
-                    </button>
-                </div>
+                        >
+                            {!selectedOutcome ? "Select Outcome" : "Place Bet"}
+                        </button>
+                    </div>
+                )}
                 <div className="flex w-full">
                     <button
                         onClick={handleClaimWinnings}
