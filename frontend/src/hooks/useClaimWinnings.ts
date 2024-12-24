@@ -32,7 +32,7 @@ export const useClaimWinnings = () => {
         // Validate wallet connection
         if (!account.isConnected) {
             openModal?.({
-                message: "Please connect your wallet",
+                message: "Sign in to Claim Winnings",
                 type: "info",
             });
             return { success: false };

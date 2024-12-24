@@ -32,7 +32,7 @@ export const useResolveMarket = () => {
         // Validate wallet connection
         if (!account.isConnected) {
             openModal?.({
-                message: "Please connect your wallet",
+                message: "Sign in to Resolve Market",
                 type: "info",
             });
             return { success: false };

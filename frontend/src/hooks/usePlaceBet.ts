@@ -17,7 +17,7 @@ export const usePlaceBet = () => {
     }: PlaceBetArgs): Promise<PlaceBetResult> => {
         if (!account.isConnected) {
             openModal?.({
-                message: "Sign in to Create Market",
+                message: "Sign in to Place Bet",
                 type: "info",
             });
             return { success: false };
