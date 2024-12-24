@@ -178,7 +178,7 @@ export const CreatePage: React.FC = () => {
 
     return (
         <motion.div
-            className="flex flex-col justify-center items-center mx-auto w-2/3 max-w-[50rem] px-6 py-6 space-y-3"
+            className="flex flex-col justify-center items-center mx-auto lg:w-2/3 max-w-[50rem] px-6 py-6 space-y-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >

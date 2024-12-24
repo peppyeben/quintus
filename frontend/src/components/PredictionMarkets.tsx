@@ -80,7 +80,7 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
     return (
         <div
             onClick={() => navigate(`/markets/${id}`)}
-            className="flex flex-col cursor-pointer justify-start items-start rounded-xl p-3 h-fit max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2 transition-all duration-300 hover:scale-95"
+            className="flex flex-col cursor-pointer justify-start items-start rounded-xl p-3 h-fit w-full lg:max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2 transition-all duration-300 hover:scale-95"
         >
             <section className="flex w-full justify-start items-center">
                 <p className="bg-white text-black rounded-full py-[0.075rem] px-3 text-xs">

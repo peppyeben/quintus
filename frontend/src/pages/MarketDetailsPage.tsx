@@ -180,7 +180,7 @@ export const MarketDetailsPage: React.FC = () => {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col space-y-5 justify-start items-center py-6 w-1/2 mx-auto "
+            className="flex flex-col space-y-5 justify-start items-center py-6 w-full px-2 mx-auto lg:w-1/2 lg:px-0"
         >
             <motion.div className="flex flex-col justify-start space-y-6 py-4 w-full max-w-4xl px-6 bg-[#0d0d0d]">
                 <section className="flex w-full justify-start items-center">
@@ -203,8 +203,8 @@ export const MarketDetailsPage: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="rounded-lg p-4 flex justify-between w-full">
-                    <p className="flex text-sm flex-col justify-start items-center">
+                <div className="rounded-lg py-4 lg:p-4 flex flex-col space-y-4 justify-between w-full">
+                    <p className="flex text-sm flex-col justify-start lg:items-center lg:!flex-row">
                         <span className="flex space-x-2 mr-auto">
                             <FaRegClock className="text-gray-500 text-left " />
                             <span className="text-gray-500 text-left text-sm">
@@ -215,10 +215,12 @@ export const MarketDetailsPage: React.FC = () => {
                             {formatDate(Number(market.betDeadline))}
                         </span>
                     </p>
-                    <p className="flex text-sm flex-col justify-start items-center">
+                    <p className="flex text-sm flex-col justify-start lg:items-center lg:!flex-row">
                         <span className="flex space-x-2 mr-auto">
+                            <FaRegClock className="text-gray-500 text-left " />
+
                             <span className="text-gray-500 text-left text-sm">
-                                Resolution Deadline
+                                Resolution Start Time
                             </span>
                         </span>
                         <span className="text-white text-left font-bold">
@@ -309,6 +311,7 @@ export const MarketDetailsPage: React.FC = () => {
                             key={outcome}
                             outcome={outcome}
                             marketId={BigInt(market.id)}
+                            winningOutcome={market.winningOutcome}
                         />
                     ))}
                 </div>

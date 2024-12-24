@@ -64,7 +64,7 @@ export const BetCard: React.FC<Bet> = ({
                 <p className="text-lg text-white font-bold">Market Title</p>
                 {getStatusLabel(status)}
             </section>
-            <section className="flex justify-between items-center w-2/3">
+            <section className="flex flex-col justify-between items-center w-2/3 space-y-2 lg:!flex-row lg:space-y-0">
                 <p className="flex flex-col items-center self-start space-y-1">
                     <span className="text-gray-400 mr-auto">Outcome</span>
                     <span className="text-white mr-auto">{outcome}</span>

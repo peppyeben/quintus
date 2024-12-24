@@ -7,7 +7,6 @@ export interface Market {
     betDeadline: bigint;
     resolutionDeadline: bigint;
     creator: `0x${string}`;
-    // creator: string;
     resolved: boolean;
     outcomes: string[];
     totalPool: bigint;
@@ -22,7 +21,6 @@ export type RawMarketData = [
     string[], // descriptions
     bigint[], // betDeadlines
     bigint[], // resolutionDeadlines
-    // string[], // creators
     `0x${string}`[], // creators
     boolean[], // resolved
     string[][], // outcomes
