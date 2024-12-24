@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "react-router-dom";
-import { FaRegClock } from "react-icons/fa";
+import { FaRegClock, FaShare } from "react-icons/fa";
 import { TbBrandBinance } from "react-icons/tb";
 import { ChevronDown } from "lucide-react";
 import { MARKET_CATEGORY } from "@/utils/util";
@@ -13,6 +13,7 @@ import { useMarkets } from "@/context/MarketsContext";
 import { MarketOutcomeItem } from "@/components/MarketOutcome";
 import { useClaimWinnings } from "@/hooks/useClaimWinnings";
 import { useResolveMarket } from "@/hooks/useResolveMarket";
+import ShareButton from "@/components/ShareButton";
 
 export const MarketDetailsPage: React.FC = () => {
     const { markets, isLoading, error } = useMarkets();
@@ -183,11 +184,14 @@ export const MarketDetailsPage: React.FC = () => {
             className="flex flex-col space-y-5 justify-start items-center py-6 w-full px-2 mx-auto lg:w-1/2 lg:px-0"
         >
             <motion.div className="flex flex-col justify-start space-y-6 py-4 w-full max-w-4xl px-6 bg-[#0d0d0d]">
-                <section className="flex w-full justify-start items-center">
+                <section className="flex w-full justify-between items-center">
                     <p className="bg-white text-black rounded-full py-1 px-3 text-xs">
                         {MARKET_CATEGORY[Number(market.category)] || "Unknown"}
                     </p>
-                </section>
+                    {/* <FaShare className="text-white text-lg ml-auto transition-all duration-300 cursor-pointer hover:text-gray-300 active:text-green-300" /> */}
+
+                    <ShareButton />
+                    </section>
 
                 {/* Market Header */}
                 <div className="flex flex-col w-full justify-between items-start md:items-center space-y-5">
