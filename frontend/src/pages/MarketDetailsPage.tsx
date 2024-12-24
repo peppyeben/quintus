@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "react-router-dom";
-import { FaRegClock, FaShare } from "react-icons/fa";
+import { FaRegClock } from "react-icons/fa";
 import { TbBrandBinance } from "react-icons/tb";
 import { ChevronDown } from "lucide-react";
 import { MARKET_CATEGORY } from "@/utils/util";
