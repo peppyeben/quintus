@@ -1,11 +1,12 @@
 // src/hooks/usePlaceBet.ts
-import { useWriteContract, usePublicClient } from "wagmi";
+import { useWriteContract, usePublicClient, useAccount } from "wagmi";
 import { BET_ABI } from "@/utils/bet-abi";
 import { handleContractError, TranslatedError } from "@/utils/errors";
 
 export const usePlaceBet = () => {
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
+    const account = useAccount();
 
     const placeBet = async ({
         marketId,
@@ -14,6 +15,14 @@ export const usePlaceBet = () => {
         openModal,
         onSuccess,
     }: PlaceBetArgs): Promise<PlaceBetResult> => {
+        if (!account.isConnected) {
+            openModal?.({
+                message: "Sign in to Create Market",
+                type: "info",
+            });
+            return { success: false };
+        }
+
         try {
             openModal?.({
                 message: "Confirming your bet placement...",

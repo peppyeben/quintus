@@ -194,8 +194,24 @@ export const MarketDetailsPage: React.FC = () => {
                     <p className="text-2xl font-bold text-white text-left">
                         {market.title}
                     </p>
-                    <p className="text-gray-300 text-left py-1 text-sm break-words">
-                        Created by: {market.creator}
+                    <p
+                        className="text-gray-300 text-left py-1 text-sm break-words"
+                        onClick={() =>
+                            window.open(
+                                `https://testnet.bscscan.com/address/${market.creator}`,
+                                "_blank"
+                            )
+                        }
+                    >
+                        Created by:<> </>
+                        <span className="cursor-pointer text-blue-400 hover:text-opacity-60 lg:hidden">
+                            {`${String(market.creator).slice(0, 5)}...${String(
+                                market.creator
+                            ).slice(-5)}`}
+                        </span>
+                        <span className="cursor-pointer text-blue-400 hover:text-opacity-60 hidden lg:!flex">
+                            {`${String(market.creator)}`}
+                        </span>
                     </p>
                     <p className="py-[0.05rem] bg-gray-600 w-full rounded-xl"></p>
                     <p className="text-gray-300 text-left pt-5">
