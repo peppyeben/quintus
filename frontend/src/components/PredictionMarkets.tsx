@@ -23,6 +23,8 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
     outcomes,
     id,
     totalPool,
+    resolved,
+    betDeadline,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
     return (
         <div
             onClick={() => navigate(`/markets/${id}`)}
-            className="flex flex-col cursor-pointer justify-start items-start rounded-xl p-3 max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2 transition-all duration-300 hover:scale-95"
+            className="flex flex-col cursor-pointer justify-start items-start rounded-xl p-3 h-fit max-w-[20rem] max-h-[28rem] bg-[#0d0d0d] space-y-2 transition-all duration-300 hover:scale-95"
         >
             <section className="flex w-full justify-start items-center">
                 <p className="bg-white text-black rounded-full py-[0.075rem] px-3 text-xs">
@@ -102,84 +104,92 @@ export const PredictionMarkets: React.FC<PredictionMarketsProps> = ({
                     </p>
                     <PaginatedOutcomes outcomes={outcomes} />
                 </section>
-                <section
-                    className="w-full flex justify-center items-center relative"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div
-                        className="w-full relative"
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        <button
-                            className="w-full text-left text-xs px-3 py-2 rounded-md 
+                {!resolved && Number(betDeadline) > Date.now() / 1000 && (
+                    <>
+                        <section
+                            className="w-full flex justify-center items-center relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div
+                                className="w-full relative"
+                                onClick={() => setIsOpen(!isOpen)}
+                            >
+                                <button
+                                    className="w-full text-left text-xs px-3 py-2 rounded-md 
                             border border-neutral-700 bg-neutral-900
                             flex items-center justify-between
                             hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <span
+                                        className={
+                                            selectedOutcome
+                                                ? "text-white"
+                                                : "text-neutral-500"
+                                        }
+                                    >
+                                        {selectedOutcome || "Select Outcome"}
+                                    </span>
+                                    <ChevronDown
+                                        className={`w-5 h-5 transition-transform ${
+                                            isOpen ? "rotate-180" : ""
+                                        }`}
+                                    />
+                                </button>
+
+                                {isOpen && (
+                                    <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                        {outcomes.map((outcome) => (
+                                            <div
+                                                key={outcome}
+                                                onClick={() => {
+                                                    setSelectedOutcome(outcome);
+                                                    setIsOpen(false);
+                                                }}
+                                                className="px-3 py-1 cursor-pointer hover:bg-neutral-800 text-white"
+                                            >
+                                                {outcome}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
+                        <div
+                            className="flex flex-col space-y-2 text-white w-full"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <span
-                                className={
-                                    selectedOutcome
-                                        ? "text-white"
-                                        : "text-neutral-500"
+                            <p className="relative w-full border border-neutral-700 rounded-lg p-1">
+                                <span className="absolute top-[0.75rem] left-2">
+                                    <TbBrandBinance className="text-[#F3BA2F] text-xl m-auto" />
+                                </span>
+                                <input
+                                    type="number"
+                                    className="w-full py-1 pl-10 pr-3 text-white placeholder:text-sm border-none outline-none appearance-none bg-transparent"
+                                    placeholder="Enter bet amount"
+                                    min={0}
+                                    step={0.0001}
+                                    onChange={handleBetAmountChange}
+                                />
+                            </p>
+                        </div>
+                        <p className="mr-auto w-full" onClick={handlePlaceBet}>
+                            <button
+                                className="rounded-xl w-full mt-auto text-sm px-4 py-2 text-white bg-[#1f1f1f] 
+                            hover:scale-105 hover:bg-opacity-90 disabled:opacity-50 disabled:hover:scale-100"
+                                disabled={
+                                    !selectedOutcome ||
+                                    !betAmount ||
+                                    betAmount <= 0n
                                 }
                             >
-                                {selectedOutcome || "Select Outcome"}
-                            </span>
-                            <ChevronDown
-                                className={`w-5 h-5 transition-transform ${
-                                    isOpen ? "rotate-180" : ""
-                                }`}
-                            />
-                        </button>
-
-                        {isOpen && (
-                            <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {outcomes.map((outcome) => (
-                                    <div
-                                        key={outcome}
-                                        onClick={() => {
-                                            setSelectedOutcome(outcome);
-                                            setIsOpen(false);
-                                        }}
-                                        className="px-3 py-1 cursor-pointer hover:bg-neutral-800 text-white"
-                                    >
-                                        {outcome}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
-
-                <div
-                    className="flex flex-col space-y-2 text-white w-full"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <p className="relative w-full border border-neutral-700 rounded-lg p-1">
-                        <span className="absolute top-[0.75rem] left-2">
-                            <TbBrandBinance className="text-[#F3BA2F] text-xl m-auto" />
-                        </span>
-                        <input
-                            type="number"
-                            className="w-full py-1 pl-10 pr-3 text-white placeholder:text-sm border-none outline-none appearance-none bg-transparent"
-                            placeholder="Enter bet amount"
-                            min={0}
-                            step={0.0001}
-                            onChange={handleBetAmountChange}
-                        />
-                    </p>
-                </div>
-                <p className="mr-auto w-full" onClick={handlePlaceBet}>
-                    <button
-                        className="rounded-xl w-full mt-auto text-sm px-4 py-2 text-white bg-[#1f1f1f] 
-                            hover:scale-105 hover:bg-opacity-90 disabled:opacity-50 disabled:hover:scale-100"
-                        disabled={
-                            !selectedOutcome || !betAmount || betAmount <= 0n
-                        }
-                    >
-                        {!selectedOutcome ? "Select Outcome" : "Place Bet"}
-                    </button>
-                </p>
+                                {!selectedOutcome
+                                    ? "Select Outcome"
+                                    : "Place Bet"}
+                            </button>
+                        </p>
+                    </>
+                )}
             </section>
         </div>
     );

@@ -38,7 +38,7 @@ export const FeaturedCard: React.FC<Market> = ({
                 }}
                 className="rounded-full text-sm px-4 py-1 text-white bg-[#1f1f1f] hover:scale-105 hover:bg-opacity-90"
             >
-                Place Bet
+                View
             </button>
         </div>
     );
