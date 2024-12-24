@@ -65,7 +65,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
 
                         <WalletWrapper
                             text="Sign In"
-                            className="bg-white rounded-full px-6 py-1 text-black transition-all duration-300 hover:bg-gray-200"
+                            className="bg-white rounded-full px-3 lg:!px-6 py-1 text-black transition-all duration-300 hover:bg-gray-200"
                             withWalletAggregator={true}
                         ></WalletWrapper>
                     </section>

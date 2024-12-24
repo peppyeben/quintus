@@ -194,7 +194,7 @@ export const MarketDetailsPage: React.FC = () => {
                     <p className="text-2xl font-bold text-white text-left">
                         {market.title}
                     </p>
-                    <p className="text-gray-300 text-left py-1 text-sm">
+                    <p className="text-gray-300 text-left py-1 text-sm break-words">
                         Created by: {market.creator}
                     </p>
                     <p className="py-[0.05rem] bg-gray-600 w-full rounded-xl"></p>
