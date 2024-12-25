@@ -11,6 +11,7 @@ contract QuintusMarketTest is Test {
     address public owner;
     address public user1;
     address public user2;
+    address public user3;
     uint256 public constant MARKET_CREATION_FEE = 0.01 ether;
     event MarketReadyForResolution(
         uint256 indexed marketId,
@@ -20,13 +21,24 @@ contract QuintusMarketTest is Test {
         address creator,
         QuintusMarket.MarketCategory category
     );
+    error AlreadyPaid();
+    error NoWinningsToClaim();
+    error MarketNotResolved();
+    error BettingDeadlinePassed();
+    error TooEarlyToResolve();
+    error BettingAmountCannotBeZero();
+
+
+
 
     function setUp() public {
         owner = address(this);
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
+        user3 = makeAddr("user3");
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);
+        vm.deal(user3, 100 ether);
         oracle = new QuintusOracles();
         market = new QuintusMarket(address(oracle));
     }
@@ -214,6 +226,64 @@ contract QuintusMarketTest is Test {
         market.placeBet{value: 1 ether}(99, "Team A");
     }
 
+    function testLoserCannotClaim() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // User1 bets on winning outcome
+    vm.prank(user1);
+    market.placeBet{value: 1 ether}(0, "Team A");
+
+    // User2 bets on losing outcome
+    vm.prank(user2);
+    market.placeBet{value: 1 ether}(0, "Team B");
+
+    vm.warp(block.timestamp + 2 days + 1);
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+
+    // Loser attempts to claim
+    vm.expectRevert(NoWinningsToClaim.selector);
+    vm.prank(user2);
+    market.claimWinnings(0);
+    }
+
+    function testCannotBetZeroAmount() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Attempt to place bet with zero amount
+    vm.expectRevert(BettingAmountCannotBeZero.selector);
+    vm.prank(user2);
+    market.placeBet{value: 0}(0, "Team A");
+    }
+
+
+
     function testExactWinningCalculations() public {
     string[] memory outcomes = new string[](2);
     outcomes[0] = "Team A";
@@ -253,6 +323,83 @@ contract QuintusMarketTest is Test {
     assertEq(user1.balance - user1BalanceBefore, 1.98 ether);
     assertEq(user2.balance - user2BalanceBefore, 2.895 ether);
     }
+
+
+    function testClaimingBeforeResolution() public {
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    vm.prank(user2);
+    market.placeBet{value: 1 ether}(0, "Team A");
+
+    // Try to claim before resolution
+    vm.expectRevert(MarketNotResolved.selector);
+    vm.prank(user2);
+    market.claimWinnings(0);
+    }
+
+    function testBettingAfterDeadline() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 betDeadline = block.timestamp + 1 days;
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "Test Market",
+            "Description",
+            betDeadline,
+            block.timestamp + 2 days,
+            outcomes,
+            QuintusMarket.MarketCategory.SPORTS
+        );
+
+        // Move time past betting deadline
+        vm.warp(betDeadline + 1);
+
+        // Attempt to place bet after deadline
+        vm.expectRevert(BettingDeadlinePassed.selector);
+        vm.prank(user2);
+        market.placeBet{value: 1 ether}(0, "Team A");
+    }
+
+    function testResolutionBeforeDeadline() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Team A";
+        outcomes[1] = "Team B";
+        
+        uint256 resolutionDeadline = block.timestamp + 2 days;
+        
+        vm.prank(user1);
+        market.createMarket{value: MARKET_CREATION_FEE}(
+            "Test Market",
+            "Description",
+            block.timestamp + 1 days,
+            resolutionDeadline,
+            outcomes,
+            QuintusMarket.MarketCategory.SPORTS
+        );
+
+        vm.prank(owner);
+        oracle.setBettingContract(address(market));
+
+        // Try to resolve before deadline
+        vm.expectRevert(TooEarlyToResolve.selector);
+        market.resolveMarket(0);
+    }
+
 
 
 
@@ -369,6 +516,97 @@ contract QuintusMarketTest is Test {
     );
     market.resolveMarket(0);
     }
+    
+    function testExactWinningsAndDoubleClaim() public {
+    // Setup market
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Place bet
+    uint256 betAmount = 10 ether;
+    vm.prank(user2);
+    market.placeBet{value: betAmount}(0, "Team A");
+
+    // Calculate expected amounts
+    uint256 expectedPlatformFee = (betAmount * 25) / 1000; // 2.5%
+    uint256 expectedCreatorFee = (betAmount * 10) / 1000; // 1%
+    uint256 expectedWinnings = betAmount - expectedPlatformFee - expectedCreatorFee;
+
+    // Record initial balances
+    uint256 ownerBalanceBefore = owner.balance;
+    uint256 creatorBalanceBefore = user1.balance;
+    uint256 betterBalanceBefore = user2.balance;
+
+    // Resolve market
+    vm.warp(block.timestamp + 2 days + 1);
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+
+    // First claim
+    vm.prank(user2);
+    market.claimWinnings(0);
+
+    // Verify exact amounts
+    assertEq(owner.balance - ownerBalanceBefore, expectedPlatformFee, "Platform fee incorrect");
+    assertEq(user1.balance - creatorBalanceBefore, expectedCreatorFee, "Creator fee incorrect");
+    assertEq(user2.balance - betterBalanceBefore, expectedWinnings, "Winner winnings incorrect");
+
+    // Attempt second claim
+    vm.expectRevert(AlreadyPaid.selector);
+    vm.prank(user2);
+    market.claimWinnings(0);
+    }
+
+    function testOnlyBettorsCanClaim() public {
+    // Setup market
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // User2 places bet
+    vm.prank(user2);
+    market.placeBet{value: 1 ether}(0, "Team A");
+
+    // Resolve market
+    vm.warp(block.timestamp + 2 days + 1);
+    vm.prank(owner);
+    oracle.setBettingContract(address(market));
+    vm.prank(owner);
+    oracle.resolveBet(0, "Team A");
+
+    // User3 who never bet tries to claim
+    vm.expectRevert(NoWinningsToClaim.selector);
+    vm.prank(user3);
+    market.claimWinnings(0);
+
+    // Legitimate bettor can claim
+    vm.prank(user2);
+    market.claimWinnings(0);
+    }
+
 
 
 

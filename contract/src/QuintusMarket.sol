@@ -44,6 +44,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
 
     /// @notice Structure defining a user's bet
     struct Bet {
+        uint256 marketId; // Market ID
         uint256 amount; // Bet amount (in tokens)
         string outcome; // Chosen outcome (string)
         BetStatus status; // Status of the bet (Pending/Won/Lost)
@@ -60,6 +61,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     // Mappings
     mapping(uint256 => Market) public markets; // Market ID to Market data
     mapping(uint256 => mapping(address => Bet[])) public userBets; // User bets per market
+    mapping(uint256 => mapping(address => bool)) public hasClaimed;
 
     // Custom errors for gas optimization
     error InvalidBetDeadline();
@@ -77,6 +79,8 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     error MarketNotResolved();
     error NoBetsOnWinningOutcome();
     error MarketNotCreated();
+    error AlreadyPaid();
+    error NoExistingBets();
 
     // Events
     event MarketCreated(uint256 indexed marketId, string betTitle, address creator, MarketCategory category);
@@ -105,7 +109,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     /// @param _resolutionDeadline Timestamp for when the bet can be resolved
     /// @param _outcomes Array of possible outcomes for the bet
     /// @param _category Category of the bet (e.g., Sports, Crypto)
-    function createMarket(
+        function createMarket(
         string memory _betTitle,
         string memory _description,
         uint256 _betDeadline,
@@ -117,6 +121,10 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         if (_resolutionDeadline <= _betDeadline) revert InvalidResolutionDeadline();
         if (_outcomes.length < 2) revert InsufficientOutcomes();
         if (msg.value < MARKET_CREATION_FEE) revert InsufficientFee();
+
+        // Transfer market creation fee to owner
+        (bool success,) = owner().call{value: MARKET_CREATION_FEE}("");
+        if (!success) revert TransferFailed();
 
         Market storage market = markets[marketCount++];
         market.betTitle = _betTitle;
@@ -131,11 +139,13 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         emit MarketCreated(marketCount - 1, _betTitle, msg.sender, _category);
     }
 
+
     /// @notice Allows a user to place a bet on a specific outcome of a market
     /// @param _marketId The ID of the market to place a bet on
     /// @param _outcome The outcome the user is betting on
     function placeBet(uint256 _marketId, string memory _outcome) external payable nonReentrant {
         Market storage market = markets[_marketId];
+        if (_marketId >= marketCount) revert MarketNotCreated();
         if (market.resolved) revert MarketAlreadyResolved();
         if (block.timestamp >= market.betDeadline) revert BettingDeadlinePassed();
         if (msg.value == 0) revert BettingAmountCannotBeZero();
@@ -159,11 +169,11 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         market.totalBets[_outcome] += msg.value;
 
         // Calculate potential winnings based on user's bet proportion
-        uint256 potentialWinnings = (msg.value * market.totalPool) / market.totalBets[_outcome];
+        uint256 potentialWinnings = (msg.value * market.totalPool) * 1e18/ market.totalBets[_outcome];
 
         // Record the user's bet
         userBets[_marketId][msg.sender].push(
-            Bet({amount: msg.value, outcome: _outcome, status: BetStatus.Pending, potentialWinnings: potentialWinnings})
+            Bet({marketId: _marketId, amount: msg.value, outcome: _outcome, status: BetStatus.Pending, potentialWinnings: potentialWinnings})
         );
 
         emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
@@ -172,37 +182,42 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     /// @notice Allows winners to claim their winnings from the resolved market
     /// @param _marketId The ID of the resolved market
     function claimWinnings(uint256 _marketId) external nonReentrant {
-        Market storage market = markets[_marketId];
-        if (!market.resolved) revert MarketNotResolved();
+    Market storage market = markets[_marketId];
+    if (!market.resolved) revert MarketNotResolved();
+    if (hasClaimed[_marketId][msg.sender]) revert AlreadyPaid();
+    
+    uint256 totalWinningBets = market.totalBets[market.winningOutcome];
+    if (totalWinningBets == 0) revert NoBetsOnWinningOutcome();
 
-        uint256 totalWinningBets = market.totalBets[market.winningOutcome];
-        if (totalWinningBets == 0) revert NoBetsOnWinningOutcome();
+    uint256 totalPool = market.totalPool;
+    uint256 userWinnings = 0;
+    Bet[] storage bets = userBets[_marketId][msg.sender];
+    uint256 len = bets.length;
 
-        uint256 totalPool = market.totalPool;
-        uint256 userWinnings = 0;
-        Bet[] storage bets = userBets[_marketId][msg.sender];
-        uint256 len = bets.length;
-
-        // Calculate the user's total winnings from their valid bets
-        for (uint256 i; i < len;) {
-            if (
-                bets[i].status == BetStatus.Pending
-                    && keccak256(abi.encodePacked(bets[i].outcome)) == keccak256(abi.encodePacked(market.winningOutcome))
-            ) {
+    // Calculate the user's total winnings and mark bet statuses
+    for (uint256 i; i < len;) {
+        if (bets[i].status == BetStatus.Pending) {
+            if (keccak256(abi.encodePacked(bets[i].outcome)) == keccak256(abi.encodePacked(market.winningOutcome))) {
                 bets[i].status = BetStatus.Won;
                 userWinnings += (bets[i].amount * totalPool) / totalWinningBets;
-            }
-            unchecked {
-                ++i;
+            } else {
+                bets[i].status = BetStatus.Lost;
             }
         }
+        unchecked {
+            ++i;
+        }
+    }
 
-        if (userWinnings == 0) revert NoWinningsToClaim();
+    if (userWinnings == 0) revert NoWinningsToClaim();
 
         // Deduct platform and creator fees
         uint256 platformFee = (userWinnings * PLATFORM_FEE) / 1000; // 2.5% fee
         uint256 creatorFee = (userWinnings * CREATOR_FEE) / 1000; // 1% fee
         uint256 finalWinnings = userWinnings - platformFee - creatorFee;
+
+        // Mark user as claimed before transfers to prevent reentrancy
+        hasClaimed[_marketId][msg.sender] = true;
 
         // Transfer fees and winnings
         (bool platformSuccess,) = owner().call{value: platformFee}("");
@@ -213,6 +228,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
 
         emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
     }
+
 
     /// @notice Resolves a bet with the winning outcome from the oracle
     /// @param _marketId The ID of the market to resolve
@@ -331,6 +347,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         )
     {
         Market storage market = markets[_marketId];
+        if (!market.marketCreated) revert MarketNotCreated();
         return (
             market.betTitle,
             market.description,
@@ -361,6 +378,8 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
 
         // Fetch total bets for the specified outcome
         totalBetsForOutcome = market.totalBets[_outcome];
+
+        if (totalBetsForOutcome == 0) revert NoExistingBets();
 
         // Calculate outcome weight as a percentage of the total pool
         if (market.totalPool > 0) {
