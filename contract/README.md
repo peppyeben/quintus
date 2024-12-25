@@ -5,14 +5,14 @@ A decentralized prediction market platform enabling users to create, participate
 ## Deployed Contracts (BSC Testnet)
 
 ### QuintusMarket
-- Contract Address: `0xE60dd9E95Eff59f5A6D48846B1A3aE1863b5327c.`
+- Contract Address: `0xC8e6deCd049C1932b81Cb88eb755BEf877f9Ed7e.`
 - Deployer Address: `0xc2fFBcCbF35ff5603c69eC44c5e2e638B30f731c`
-- Transaction Hash: `0x28add4970252fbfdac8f397e97132d9d6e39b5225d868095c0cbe1b70815fb7c`
+- Transaction Hash: `0xc9bb6d9fc157a5deb7ce16d9c25ef35bb71dd7da9ed8e801c6ffbe27ba7f9a83`
 
 ### QuintusOracles  
-- Contract Address: `0xE7Dadf483c42d29353D112288F826b0eDa18e327.`
+- Contract Address: `0x1a8607357b9250e97B1Ac8caf3E504C0674930a2.`
 - Deployer Address: `0xc2fFBcCbF35ff5603c69eC44c5e2e638B30f731c`
-- Transaction Hash: `0x017b1cde8132772470a65026dffc4a1c2743b410e1638b0c834ea87bec8652e1`
+- Transaction Hash: `0xbee87af50e037b69590a8179198676b3889893927d51d68a15f27e230b5de453`
 
 ## Core Components
 
