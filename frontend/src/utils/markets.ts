@@ -58,3 +58,33 @@ export function parseMarkets(rawMarketData: RawMarketData): Market[] {
         category: categories[index],
     }));
 }
+
+export const mapMarketData = (
+    data: readonly [
+        string,
+        string,
+        bigint,
+        bigint,
+        `0x${string}`,
+        boolean,
+        readonly string[],
+        bigint,
+        string,
+        number
+    ],
+    id: bigint
+): Market => {
+    return {
+        id,
+        title: data[0],
+        description: data[1].toString(), // Convert bigint to string if needed
+        betDeadline: data[2],
+        resolutionDeadline: data[3],
+        creator: data[4],
+        resolved: data[5],
+        outcomes: [...data[6]],
+        totalPool: data[7],
+        winningOutcome: data[8],
+        category: BigInt(data[9]),
+    };
+};

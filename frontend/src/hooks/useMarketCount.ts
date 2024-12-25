@@ -14,6 +14,10 @@ export const useMarketCount = () => {
         address: contractAddress,
         abi: BET_ABI,
         functionName: "marketCount",
+        query: {
+            staleTime: 1000 * 60, // 1 minute
+            refetchInterval: 1000 * 60 * 2, // every 2 minutes
+        },
     });
 
     return {

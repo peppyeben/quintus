@@ -236,6 +236,16 @@ export const BET_ABI = [
     },
     {
         type: "function",
+        name: "hasClaimed",
+        inputs: [
+            { name: "", type: "uint256", internalType: "uint256" },
+            { name: "", type: "address", internalType: "address" },
+        ],
+        outputs: [{ name: "", type: "bool", internalType: "bool" }],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
         name: "marketCount",
         inputs: [],
         outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
@@ -394,6 +404,11 @@ export const BET_ABI = [
             { name: "", type: "uint256", internalType: "uint256" },
         ],
         outputs: [
+            {
+                name: "marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
             {
                 name: "amount",
                 type: "uint256",
@@ -585,6 +600,7 @@ export const BET_ABI = [
         ],
         anonymous: false,
     },
+    { type: "error", name: "AlreadyPaid", inputs: [] },
     { type: "error", name: "BettingAmountCannotBeZero", inputs: [] },
     { type: "error", name: "BettingDeadlinePassed", inputs: [] },
     { type: "error", name: "InsufficientFee", inputs: [] },
@@ -596,6 +612,7 @@ export const BET_ABI = [
     { type: "error", name: "MarketNotCreated", inputs: [] },
     { type: "error", name: "MarketNotResolved", inputs: [] },
     { type: "error", name: "NoBetsOnWinningOutcome", inputs: [] },
+    { type: "error", name: "NoExistingBets", inputs: [] },
     { type: "error", name: "NoWinningsToClaim", inputs: [] },
     {
         type: "error",

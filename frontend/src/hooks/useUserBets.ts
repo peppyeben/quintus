@@ -11,6 +11,7 @@ export enum BetStatus {
 
 // Bet interface matching the Solidity struct exactly
 export interface Bet {
+    marketId: bigint; // Market ID
     amount: bigint; // Bet amount (in tokens)
     outcome: string; // Chosen outcome (string)
     status: BetStatus; // Status of the bet (Pending/Won/Lost)
@@ -48,16 +49,14 @@ export const useUserBets = () => {
 
             const allUserBets: Bet[] = [];
 
-            for (
-                let marketId = 1;
-                marketId <= Number(marketCount);
-                marketId++
-            ) {
+            for (let marketId = 0; marketId < Number(marketCount); marketId++) {
                 const userBetsForMarket = await fetchUserBetsForMarket(
                     BigInt(marketId)
                 );
                 allUserBets.push(...userBetsForMarket);
             }
+
+            console.log("User bets:", allUserBets);
 
             setUserBets(allUserBets);
             setIsLoading(false);
@@ -86,16 +85,19 @@ export const useUserBets = () => {
                     abi: BET_ABI,
                     functionName: "userBets",
                     args: [marketId, address as `0x${string}`, BigInt(index)],
+                    account: address,
                 });
 
                 if (!result) break;
 
-                const [amount, outcome, status, potentialWinnings] = result;
+                const [market_id, amount, outcome, status, potentialWinnings] =
+                    result;
 
                 // If bet amount is 0, assume no more bets
                 if (amount === 0n) break;
 
                 userBetsForMarket.push({
+                    marketId: market_id,
                     amount: amount,
                     outcome: outcome,
                     status: status,

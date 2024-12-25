@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { FaRegClock } from "react-icons/fa";
 import { TbBrandBinance } from "react-icons/tb";
 import { ChevronDown } from "lucide-react";
-import { MARKET_CATEGORY } from "@/utils/util";
+import { formatDate, MARKET_CATEGORY } from "@/utils/util";
 import { handleContractError } from "@/utils/errors";
 import { usePlaceBet } from "@/hooks/usePlaceBet";
 import { useCustomModal } from "@/context/CustomModalContext";
@@ -172,11 +172,6 @@ export const MarketDetailsPage: React.FC = () => {
         );
     }
 
-    // Convert timestamp to readable date
-    const formatDate = (timestamp: number) => {
-        return new Date(timestamp * 1000).toUTCString();
-    };
-
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -191,7 +186,7 @@ export const MarketDetailsPage: React.FC = () => {
                     {/* <FaShare className="text-white text-lg ml-auto transition-all duration-300 cursor-pointer hover:text-gray-300 active:text-green-300" /> */}
 
                     <ShareButton />
-                    </section>
+                </section>
 
                 {/* Market Header */}
                 <div className="flex flex-col w-full justify-between items-start md:items-center space-y-5">

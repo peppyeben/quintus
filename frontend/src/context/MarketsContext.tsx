@@ -49,6 +49,10 @@ export const MarketsProvider: React.FC<{ children: ReactNode }> = ({
             import.meta.env.VITE_PUBLIC_QUINTUS_MARKET as string
         ).substring(2)}`,
         functionName: "getAllMarkets",
+        query: {
+            staleTime: 1000 * 60, // 1 minute
+            refetchInterval: 1000 * 30 // every 30 seconds
+        },
     });
 
     useEffect(() => {
