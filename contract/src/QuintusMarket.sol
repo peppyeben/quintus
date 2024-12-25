@@ -48,7 +48,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         uint256 amount; // Bet amount (in tokens)
         string outcome; // Chosen outcome (string)
         BetStatus status; // Status of the bet (Pending/Won/Lost)
-        uint256 potentialWinnings; // Potential winnings for the bet
+
     }
 
     // State variables
@@ -144,39 +144,40 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
     /// @param _marketId The ID of the market to place a bet on
     /// @param _outcome The outcome the user is betting on
     function placeBet(uint256 _marketId, string memory _outcome) external payable nonReentrant {
-        Market storage market = markets[_marketId];
-        if (_marketId >= marketCount) revert MarketNotCreated();
-        if (market.resolved) revert MarketAlreadyResolved();
-        if (block.timestamp >= market.betDeadline) revert BettingDeadlinePassed();
-        if (msg.value == 0) revert BettingAmountCannotBeZero();
+    Market storage market = markets[_marketId];
+    if (_marketId >= marketCount) revert MarketNotCreated();
+    if (market.resolved) revert MarketAlreadyResolved();
+    if (block.timestamp >= market.betDeadline) revert BettingDeadlinePassed();
+    if (msg.value == 0) revert BettingAmountCannotBeZero();
 
-        // Explicitly initialize validOutcome
-        bool validOutcome = false;
-        uint256 len = market.outcomes.length;
-        for (uint256 i; i < len;) {
-            if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(_outcome))) {
-                validOutcome = true;
-                break;
-            }
-            unchecked {
-                ++i;
-            }
+    bool validOutcome = false;
+    uint256 len = market.outcomes.length;
+    for (uint256 i; i < len;) {
+        if (keccak256(abi.encodePacked(market.outcomes[i])) == keccak256(abi.encodePacked(_outcome))) {
+            validOutcome = true;
+            break;
         }
-        if (!validOutcome) revert InvalidOutcome();
+        unchecked {
+            ++i;
+        }
+    }
+    if (!validOutcome) revert InvalidOutcome();
 
-        // Update total market pool
-        market.totalPool += msg.value;
-        market.totalBets[_outcome] += msg.value;
+    // Update total market pool
+    market.totalPool += msg.value;
+    market.totalBets[_outcome] += msg.value;
 
-        // Calculate potential winnings based on user's bet proportion
-        uint256 potentialWinnings = (msg.value * market.totalPool) / market.totalBets[_outcome];
+    // Record the user's bet
+    userBets[_marketId][msg.sender].push(
+        Bet({
+            marketId: _marketId,
+            amount: msg.value,
+            outcome: _outcome,
+            status: BetStatus.Pending
+        })
+    );
 
-        // Record the user's bet
-        userBets[_marketId][msg.sender].push(
-            Bet({marketId: _marketId, amount: msg.value, outcome: _outcome, status: BetStatus.Pending, potentialWinnings: potentialWinnings})
-        );
-
-        emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
+    emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
     }
 
     /// @notice Allows winners to claim their winnings from the resolved market
@@ -228,6 +229,42 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
 
         emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
     }
+
+    /// @notice Calculates potential winnings for a bettor's pending bets in a market
+    /// @param _marketId The ID of the market to calculate winnings for
+    /// @param _bettor Address of the bettor
+    /// @return totalPotentialWinnings The potential winnings after platform and creator fees
+    function calculatePotentialWinnings(
+        uint256 _marketId, 
+        address _bettor
+    ) public view returns (uint256 totalPotentialWinnings) {
+        // Load market data from storage
+        Market storage market = markets[_marketId];
+        if (!market.marketCreated) revert MarketNotCreated();
+
+        // Get bettor's bets for this market
+        Bet[] storage userBetArray = userBets[_marketId][_bettor];
+        uint256 len = userBetArray.length;
+
+        // Calculate potential winnings for each pending bet
+        for (uint256 i; i < len;) {
+            Bet storage bet = userBetArray[i];
+            if (bet.status == BetStatus.Pending) {
+                uint256 totalBetsForOutcome = market.totalBets[bet.outcome];
+                if (totalBetsForOutcome > 0) {
+                    // Calculate potential winnings based on current pool state
+                    totalPotentialWinnings += (bet.amount * market.totalPool) / totalBetsForOutcome;
+                }
+            }
+            unchecked { ++i; }
+        }
+
+        // Deduct platform and creator fees
+        uint256 platformFee = (totalPotentialWinnings * PLATFORM_FEE) / 1000; // 2.5% fee
+        uint256 creatorFee = (totalPotentialWinnings * CREATOR_FEE) / 1000;   // 1% fee
+        return totalPotentialWinnings - platformFee - creatorFee;
+    }
+
 
 
     /// @notice Resolves a bet with the winning outcome from the oracle

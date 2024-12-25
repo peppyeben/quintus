@@ -400,6 +400,58 @@ contract QuintusMarketTest is Test {
         market.resolveMarket(0);
     }
 
+    function testDynamicPotentialWinnings() public {
+    // Setup market
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // User2 places initial bet
+    vm.prank(user2);
+    market.placeBet{value: 1 ether}(0, "Team A");
+    
+    // Initial potential winnings (1 ETH bet)
+    uint256 initialPotential = market.calculatePotentialWinnings(0, user2);
+    
+    // User3 places larger bet on same outcome
+    vm.prank(user3);
+    market.placeBet{value: 2 ether}(0, "Team A");
+    
+    // Updated potential winnings after pool increase
+    uint256 updatedPotential = market.calculatePotentialWinnings(0, user2);
+    
+    // Place bet on different outcome
+    vm.prank(user1);
+    market.placeBet{value: 3 ether}(0, "Team B");
+    
+    // Final potential winnings
+    uint256 finalPotential = market.calculatePotentialWinnings(0, user2);
+
+    // Calculate expected values
+    uint256 totalPool = 6 ether;
+    uint256 teamATotalBets = 3 ether;
+    uint256 expectedWinnings = (1 ether * totalPool) / teamATotalBets;
+    uint256 platformFee = (expectedWinnings * 25) / 1000;
+    uint256 creatorFee = (expectedWinnings * 10) / 1000;
+    uint256 expectedFinalPotential = expectedWinnings - platformFee - creatorFee;
+
+    // Verify calculations
+    assertEq(finalPotential, expectedFinalPotential);
+    assertTrue(finalPotential > initialPotential);
+    assertTrue(finalPotential > updatedPotential);
+    }
+
+
 
 
 
