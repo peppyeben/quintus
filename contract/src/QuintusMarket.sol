@@ -169,7 +169,7 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         market.totalBets[_outcome] += msg.value;
 
         // Calculate potential winnings based on user's bet proportion
-        uint256 potentialWinnings = (msg.value * market.totalPool) * 1e18/ market.totalBets[_outcome];
+        uint256 potentialWinnings = (msg.value * market.totalPool) / market.totalBets[_outcome];
 
         // Record the user's bet
         userBets[_marketId][msg.sender].push(
