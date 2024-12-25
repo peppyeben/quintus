@@ -400,60 +400,6 @@ contract QuintusMarketTest is Test {
         market.resolveMarket(0);
     }
 
-    function testDynamicPotentialWinnings() public {
-    // Setup market
-    string[] memory outcomes = new string[](2);
-    outcomes[0] = "Team A";
-    outcomes[1] = "Team B";
-    
-    vm.prank(user1);
-    market.createMarket{value: MARKET_CREATION_FEE}(
-        "Test Market",
-        "Description",
-        block.timestamp + 1 days,
-        block.timestamp + 2 days,
-        outcomes,
-        QuintusMarket.MarketCategory.SPORTS
-    );
-
-    // User2 places initial bet
-    vm.prank(user2);
-    market.placeBet{value: 1 ether}(0, "Team A");
-    
-    // Initial potential winnings (1 ETH bet)
-    uint256 initialPotential = market.calculatePotentialWinnings(0, user2);
-    
-    // User3 places larger bet on same outcome
-    vm.prank(user3);
-    market.placeBet{value: 2 ether}(0, "Team A");
-    
-    // Updated potential winnings after pool increase
-    uint256 updatedPotential = market.calculatePotentialWinnings(0, user2);
-    
-    // Place bet on different outcome
-    vm.prank(user1);
-    market.placeBet{value: 3 ether}(0, "Team B");
-    
-    // Final potential winnings
-    uint256 finalPotential = market.calculatePotentialWinnings(0, user2);
-
-    // Calculate expected values
-    uint256 totalPool = 6 ether;
-    uint256 teamATotalBets = 3 ether;
-    uint256 expectedWinnings = (1 ether * totalPool) / teamATotalBets;
-    uint256 platformFee = (expectedWinnings * 25) / 1000;
-    uint256 creatorFee = (expectedWinnings * 10) / 1000;
-    uint256 expectedFinalPotential = expectedWinnings - platformFee - creatorFee;
-
-    // Verify calculations
-    assertEq(finalPotential, expectedFinalPotential);
-    assertTrue(finalPotential > initialPotential);
-    assertTrue(finalPotential > updatedPotential);
-    }
-
-
-
-
 
     function testComplexFeeDistribution() public {
         string[] memory outcomes = new string[](3);
@@ -691,6 +637,72 @@ contract QuintusMarketTest is Test {
         assertEq(noBets, 25 ether, "NO bets should be 25 ether");
         assertEq(noWeight, 25, "NO weight should be 25%");
     }
+
+    function testCalculatePotentialWinningsPerBetWithPoolChanges() public {
+    // Setup market
+    string[] memory outcomes = new string[](2);
+    outcomes[0] = "Team A";
+    outcomes[1] = "Team B";
+    
+    vm.prank(user1);
+    market.createMarket{value: MARKET_CREATION_FEE}(
+        "Test Market",
+        "Description",
+        block.timestamp + 1 days,
+        block.timestamp + 2 days,
+        outcomes,
+        QuintusMarket.MarketCategory.SPORTS
+    );
+
+    // Stage 1: Initial bets from user2
+    vm.startPrank(user2);
+    market.placeBet{value: 2 ether}(0, "Team A");
+    market.placeBet{value: 3 ether}(0, "Team A");
+    vm.stopPrank();
+
+    uint256[] memory winningsStage1 = market.calculatePotentialWinnings(0, user2, "Team A");
+    
+    uint256 expectedFirstBetStage1 = 2 ether;
+    uint256 expectedSecondBetStage1 = 3 ether;
+    
+    assertEq(winningsStage1[0], calculateWithFees(expectedFirstBetStage1), "Stage 1: First bet winnings");
+    assertEq(winningsStage1[1], calculateWithFees(expectedSecondBetStage1), "Stage 1: Second bet winnings");
+
+    // Stage 2: User3 adds to pool with Team B bet
+    vm.prank(user3);
+    market.placeBet{value: 5 ether}(0, "Team B");
+    
+    uint256[] memory winningsStage2 = market.calculatePotentialWinnings(0, user2, "Team A");
+    
+    uint256 expectedFirstBetStage2 = (2 ether * 10 ether) / 5 ether;  // 4 ether
+    uint256 expectedSecondBetStage2 = (3 ether * 10 ether) / 5 ether; // 6 ether
+    
+    assertEq(winningsStage2[0], calculateWithFees(expectedFirstBetStage2), "Stage 2: First bet winnings");
+    assertEq(winningsStage2[1], calculateWithFees(expectedSecondBetStage2), "Stage 2: Second bet winnings");
+
+    // Stage 3: More bets increase pool further
+    vm.prank(user1);
+    market.placeBet{value: 10 ether}(0, "Team B");
+    
+    uint256[] memory winningsStage3 = market.calculatePotentialWinnings(0, user2, "Team A");
+    
+    uint256 expectedFirstBetStage3 = (2 ether * 20 ether) / 5 ether;  // 8 ether
+    uint256 expectedSecondBetStage3 = (3 ether * 20 ether) / 5 ether; // 12 ether
+    
+    assertEq(winningsStage3[0], calculateWithFees(expectedFirstBetStage3), "Stage 3: First bet winnings");
+    assertEq(winningsStage3[1], calculateWithFees(expectedSecondBetStage3), "Stage 3: Second bet winnings");
+
+    // Verify increasing potential returns
+    assertTrue(winningsStage2[0] > winningsStage1[0], "Winnings should increase from stage 1 to 2");
+    assertTrue(winningsStage3[0] > winningsStage2[0], "Winnings should increase from stage 2 to 3");
+    }
+
+    function calculateWithFees(uint256 amount) internal pure returns (uint256) {
+        uint256 platformFee = (amount * 25) / 1000;
+        uint256 creatorFee = (amount * 10) / 1000;
+        return amount - platformFee - creatorFee;
+    }
+
 
 
 }
