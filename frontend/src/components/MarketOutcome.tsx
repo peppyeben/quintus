@@ -35,7 +35,7 @@ export const MarketOutcomeItem: React.FC<{
                         : "N/A"}
                 </span>
                 <span className="text-gray-600 text-sm text-left">
-                    Odds:{" "}
+                    Pot. Return:{" "}
                     {marketBetData
                         ? marketBetData[1] > 0
                             ? `${(1 / (Number(marketBetData[1]) / 100)).toFixed(
