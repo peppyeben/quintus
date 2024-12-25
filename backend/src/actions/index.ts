@@ -3,19 +3,20 @@ import QueryParser from "../modules/sports/parse-market-data";
 import dotenv from "dotenv";
 import QueryBridge from "../modules/sports/query-bridge";
 import MarketResolver from "../modules/sports/market-resolver";
+import { predictionQueries } from "../data/queries";
 dotenv.config();
 
-const preMatchQuery =
-    "How many goals will be scored in Arsenal vs Crystal Palace";
-const preMatchOutcomes = ["Under 2.5", "Over 2.5"];
-
-async function main() {
+async function main(
+    preMatchQuery: string,
+    preMatchOutcomes: string[],
+    preMatchDescription: string = ""
+) {
     const myQueryParser = new QueryParser(
         process.env.ANTHROPIC_API_KEY as string
     );
 
     const parsedQueryResult = await myQueryParser
-        .parseQuery(preMatchQuery)
+        .parseQuery(preMatchQuery, preMatchDescription)
         .catch((error) => {
             console.log("Error parsing query:", error);
             return null;
@@ -68,8 +69,24 @@ async function main() {
     return resolvedMarket;
 }
 
-main()
-    .then((res) => {
-        console.log(res);
-    })
-    .catch(console.error);
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function processQueries() {
+    let queryRes = [];
+    for (let i = 0; i < predictionQueries.length; i++) {
+        const query = predictionQueries[i];
+        const preMatchQuery = query.query;
+        const preMatchOutcomes = query.outcomes;
+
+        await delay(3000);
+        const res = await main(preMatchQuery, preMatchOutcomes);
+        queryRes.push({
+            query: preMatchQuery,
+            result: res,
+        });
+    }
+
+    console.log(queryRes);
+}
+
+processQueries();

@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 export interface QueryParseResult {
+    query: string; // Added this line
+
     teams: string[];
     predictionType: string;
     additionalDetails?: Record<string, any>;
@@ -48,6 +50,7 @@ class QueryParser {
 
       Respond ONLY with a valid JSON in this exact format:
       {
+        "query": "Original query text",
         "teams": ["Team1", "Team2"],
         "predictionType": "Match Winner / Total Goals / etc.",
         "additionalDetails": {}
@@ -57,6 +60,7 @@ class QueryParser {
       - Provide ONLY the JSON
       - No explanation or additional text
       - Ensure valid JSON syntax
+      - "query" should be EXACTLY the input title/query
     `;
 
         return promptText;
@@ -71,7 +75,14 @@ class QueryParser {
             }
 
             const cleanedJson = jsonMatch[0].replace(/```(json)?/g, "").trim();
-            return JSON.parse(cleanedJson);
+            const parsedResult = JSON.parse(cleanedJson);
+
+            // Ensure query is present
+            if (!parsedResult.query) {
+                throw new Error("Query is missing from parsed result");
+            }
+
+            return parsedResult;
         } catch (error) {
             console.error("Error parsing AI response:", responseText);
             throw new Error("Failed to parse AI response");

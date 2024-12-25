@@ -28,7 +28,8 @@ class MarketResolver {
         try {
             const response = await this.anthropic.messages.create({
                 model: "claude-3-5-haiku-latest",
-                max_tokens: 300,
+                // model: "claude-3-5-sonnet-20241022",
+                max_tokens: 1000,
                 messages: [{ role: "user", content: prompt }],
             });
 
@@ -55,35 +56,78 @@ class MarketResolver {
         queryResult: QueryParseResult,
         possibleOutcomes: string[]
     ): string {
-        const totalGoals =
-            parseInt(matchResult.intHomeScore) +
-            parseInt(matchResult.intAwayScore);
+        const teamA = matchResult.strHomeTeam;
+        const teamB = matchResult.strAwayTeam;
 
+        const teamAGoals = matchResult.intHomeScore;
+        const teamBGoals = matchResult.intAwayScore;
         return `
-      Match Details:
-      - Home Team: ${matchResult.strHomeTeam}
-      - Away Team: ${matchResult.strAwayTeam}
-      - Home Score: ${matchResult.intHomeScore}
-      - Away Score: ${matchResult.intAwayScore}
-      - Total Goals: ${totalGoals}
+    MATCH RESOLUTION PROTOCOL
 
-      Original Query: ${queryResult.predictionType}
-      Possible Outcomes: ${possibleOutcomes.join(", ")}
+TEAMS IN MATCH:
+- ${teamA}
+- ${teamB}
 
-      Carefully analyze the match result and determine the EXACT outcome that matches the original prediction query.
+MATCH RESULT:
+- ${teamA} Goals: ${teamAGoals}
+- ${teamB} Goals: ${teamBGoals}
 
-      Respond ONLY with a JSON in this format:
-      {
-        "outcome": "Specific outcome from the list",
-        "reasoning": "Explanation of how this outcome was determined"
-      }
+PREDICTION QUERY: ${queryResult.query}
+POSSIBLE OUTCOMES: ${possibleOutcomes}
 
-      IMPORTANT:
-      - Provide ONLY the JSON
-      - No explanation or additional text
-      - Ensure valid JSON syntax
-      - Match the outcome exactly to one in the possible outcomes list
-    `;
+CORE RESOLUTION RULES:
+1. WIN Condition: Team with MORE goals wins
+2. LOSE Condition: Team with FEWER goals loses
+3. DRAW Condition: Exactly EQUAL goals
+4. CLEAN SHEET: Team concedes ZERO goals
+5. BOTH TEAMS SCORE: Each team scores AT LEAST ONE goal
+
+OVER/UNDER GOALS RESOLUTION:
+- TOTAL GOALS = ${teamA} Goals + ${teamB} Goals
+- CALCULATE BY SUMMING BOTH TEAM'S GOALS
+- "Over X.5" means TOTAL GOALS STRICTLY GREATER than X
+- "Under X.5" means TOTAL GOALS STRICTLY LESS than X
+
+OVER/UNDER EXAMPLES:
+- Total Match Goals: ${Number(teamAGoals) + Number(teamBGoals)}
+- "Over 2.5" Condition:
+  * If total goals > 2, outcome is YES
+  * If total goals ≤ 2, outcome is NO
+- "Under 4.5" Condition:
+  * If total goals < 4, outcome is YES
+  * If total goals ≥ 4, outcome is NO
+
+INTERPRETATION GUIDELINES:
+- Directly map query to match result
+- Use ONLY numerical goal data
+- PRECISE matching of query intent
+- NO subjective interpretations
+
+QUERY TYPE MAPPING:
+- "Will [Team] win?" = Team's goals > Opponent's goals
+- "Will [Team] lose?" = Team's goals < Opponent's goals
+- "Draw?" = Equal goal counts
+- "[Team] clean sheet?" = Team concedes ZERO goals
+- "Both teams score?" = BOTH teams have 1+ goals
+- "Over/Under X.5 goals?" = Total match goals compared to X.5 threshold
+
+CRITICAL VERIFICATION STEPS:
+1. Identify teams in query
+2. Extract goal data
+3. Apply resolution rules
+4. Validate reasoning against original query
+
+STRICT OUTPUT FORMAT:
+{
+  "outcome": "Exact matched outcome",
+  "reasoning": "Precise numerical explanation DIRECTLY referencing team names and goals"
+}
+
+ABSOLUTE REQUIREMENTS:
+- 100% NUMERICAL PRECISION
+- EXPLICIT TEAM REFERENCES
+- UNAMBIGUOUS REASONING
+- NO COMPUTATIONAL GUESSWORK `;
     }
 }
 
