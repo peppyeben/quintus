@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { FaRegClock } from "react-icons/fa";
-import { formatUnits } from "ethers";
 import { Bet } from "@/hooks/useUserBets";
 import { useMarketInfo } from "@/hooks/useMarketInfo";
 import { mapMarketData, Market } from "@/utils/markets";

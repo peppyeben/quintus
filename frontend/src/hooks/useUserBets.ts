@@ -101,7 +101,7 @@ export const useUserBets = () => {
 
                 index++;
             } catch (error) {
-                // console.error("Error fetching user bets for market:", error);
+                console.error(error);
                 // If an error occurs, assume no more bets
                 break;
             }

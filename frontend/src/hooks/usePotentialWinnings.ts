@@ -140,6 +140,7 @@ export const usePotentialWinnings = () => {
 
                 index++;
             } catch (error) {
+                console.error(error)
                 // If an error occurs, assume no more bets
                 break;
             }
