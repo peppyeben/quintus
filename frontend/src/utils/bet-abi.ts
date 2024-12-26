@@ -33,6 +33,35 @@ export const BET_ABI = [
     },
     {
         type: "function",
+        name: "calculatePotentialWinnings",
+        inputs: [
+            {
+                name: "_marketId",
+                type: "uint256",
+                internalType: "uint256",
+            },
+            {
+                name: "_bettor",
+                type: "address",
+                internalType: "address",
+            },
+            {
+                name: "_outcome",
+                type: "string",
+                internalType: "string",
+            },
+        ],
+        outputs: [
+            {
+                name: "betWinnings",
+                type: "uint256[]",
+                internalType: "uint256[]",
+            },
+        ],
+        stateMutability: "view",
+    },
+    {
+        type: "function",
         name: "claimWinnings",
         inputs: [
             {
@@ -423,11 +452,6 @@ export const BET_ABI = [
                 name: "status",
                 type: "uint8",
                 internalType: "enum QuintusMarket.BetStatus",
-            },
-            {
-                name: "potentialWinnings",
-                type: "uint256",
-                internalType: "uint256",
             },
         ],
         stateMutability: "view",

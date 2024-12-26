@@ -14,6 +14,7 @@ import { MarketOutcomeItem } from "@/components/MarketOutcome";
 import { useClaimWinnings } from "@/hooks/useClaimWinnings";
 import { useResolveMarket } from "@/hooks/useResolveMarket";
 import ShareButton from "@/components/ShareButton";
+import { useMarketClaimStatus } from "@/hooks/useMarketInfo";
 
 export const MarketDetailsPage: React.FC = () => {
     const { markets, isLoading, error } = useMarkets();
@@ -28,6 +29,7 @@ export const MarketDetailsPage: React.FC = () => {
     const { placeBet } = usePlaceBet();
     const { claimWinnings } = useClaimWinnings();
     const { resolveMarket } = useResolveMarket();
+    // const marketClaimStatus = useMarketClaimStatus();
 
     const { openModal } = useCustomModal();
 

@@ -110,8 +110,6 @@ export const CreatePage: React.FC = () => {
     }, [errors]);
 
     const onSubmit = async (data: MarketFormData) => {
-        console.log("Submitting form data:", data);
-
         try {
             await createMarket({
                 marketTitle: data.marketTitle,

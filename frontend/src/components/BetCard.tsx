@@ -5,7 +5,7 @@ import { Bet } from "@/hooks/useUserBets";
 import { useMarketInfo } from "@/hooks/useMarketInfo";
 import { mapMarketData, Market } from "@/utils/markets";
 import { useNavigate } from "react-router-dom";
-import { formatDate } from "@/utils/util";
+import { calculateMultiplier, formatBNBAmount, formatDate } from "@/utils/util";
 
 export enum BetStatus {
     Pending = 0,
@@ -13,12 +13,16 @@ export enum BetStatus {
     Lost = 2,
 }
 
-export const BetCard: React.FC<Bet> = ({
+interface BetCardProps extends Bet {
+    potentialWinnings?: bigint;
+}
+
+export const BetCard: React.FC<BetCardProps> = ({
     amount,
     outcome,
     status,
-    potentialWinnings,
     marketId,
+    potentialWinnings,
 }) => {
     const [loadedMarketInfo, setLoadedMarketInfo] = useState<Market | null>(
         null
@@ -76,7 +80,9 @@ export const BetCard: React.FC<Bet> = ({
         <div className="w-full rounded-xl flex flex-col py-3 px-8 bg-[#0d0d0d] space-y-7">
             <section className="flex w-full justify-between items-center">
                 {isLoading ? (
-                    <p className="text-lg text-white font-bold text-left">Loading...</p>
+                    <p className="text-lg text-white font-bold text-left">
+                        Loading...
+                    </p>
                 ) : error ? (
                     <p className="text-lg text-red-500 font-bold text-left">
                         Error loading market info
@@ -100,7 +106,7 @@ export const BetCard: React.FC<Bet> = ({
                 <p className="flex flex-col items-center self-start space-y-1">
                     <span className="text-gray-400 mr-auto">Bet Amount</span>
                     <span className="text-white mr-auto">
-                        {formatUnits(amount, 18)} BNB
+                        {formatBNBAmount(amount)} BNB
                     </span>
                 </p>
                 <p className="flex flex-col items-center self-start space-y-1">
@@ -108,7 +114,14 @@ export const BetCard: React.FC<Bet> = ({
                         Potential Winnings
                     </span>
                     <span className="text-white mr-auto">
-                        {formatUnits(potentialWinnings, "ether")} BNB
+                        {potentialWinnings !== undefined
+                            ? `${formatBNBAmount(
+                                  potentialWinnings
+                              )} BNB (${calculateMultiplier(
+                                  amount,
+                                  potentialWinnings
+                              )})`
+                            : "0 BNB (0x)"}
                     </span>
                 </p>
             </section>

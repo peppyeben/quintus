@@ -15,7 +15,6 @@ export interface Bet {
     amount: bigint; // Bet amount (in tokens)
     outcome: string; // Chosen outcome (string)
     status: BetStatus; // Status of the bet (Pending/Won/Lost)
-    potentialWinnings: bigint; // Potential winnings for the bet
 }
 
 export const useUserBets = () => {
@@ -56,8 +55,6 @@ export const useUserBets = () => {
                 allUserBets.push(...userBetsForMarket);
             }
 
-            console.log("User bets:", allUserBets);
-
             setUserBets(allUserBets);
             setIsLoading(false);
             return allUserBets;
@@ -90,8 +87,7 @@ export const useUserBets = () => {
 
                 if (!result) break;
 
-                const [market_id, amount, outcome, status, potentialWinnings] =
-                    result;
+                const [market_id, amount, outcome, status] = result;
 
                 // If bet amount is 0, assume no more bets
                 if (amount === 0n) break;
@@ -101,12 +97,11 @@ export const useUserBets = () => {
                     amount: amount,
                     outcome: outcome,
                     status: status,
-                    potentialWinnings: potentialWinnings,
                 });
 
                 index++;
             } catch (error) {
-                console.error("Error fetching user bets for market:", error);
+                // console.error("Error fetching user bets for market:", error);
                 // If an error occurs, assume no more bets
                 break;
             }

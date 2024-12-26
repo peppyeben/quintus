@@ -1,16 +1,19 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { BetCard } from "../components/BetCard";
-import { useUserBets } from "@/hooks/useUserBets";
+import { usePotentialWinnings } from "@/hooks/usePotentialWinnings";
 
 export const MyBetsPage: React.FC = () => {
-    const { userBets, isLoading, error, refetchUserBets } = useUserBets();
+    const { potentialWinnings, isLoading, error, refetchPotentialWinnings } =
+        usePotentialWinnings();
 
     useEffect(() => {
-        refetchUserBets().then((res) => {
-            console.log(res);
-        });
-    }, []);
+        const fetchPW = async () => {
+            await refetchPotentialWinnings()
+        };
+
+        fetchPW();
+    }, [refetchPotentialWinnings]);
 
     if (isLoading) {
         return (
@@ -33,13 +36,22 @@ export const MyBetsPage: React.FC = () => {
     return (
         <motion.div className="flex flex-col space-y-5 justify-start items-center py-6">
             <motion.div className="flex flex-col justify-start space-y-4 py-4 w-full px-6">
-                <p className="text-xl font-bold text-white mr-auto pl-6 lg:pl-0">My Bets</p>
-                {userBets.length === 0 ? (
+                <p className="text-xl font-bold text-white mr-auto pl-6 lg:pl-0">
+                    My Bets
+                </p>
+                {potentialWinnings.length === 0 ? (
                     <p className="text-white text-center">No bets found</p>
                 ) : (
                     <div className="flex flex-col space-y-2 w-full gap-4">
-                        {userBets.map((bet, index) => (
-                            <BetCard key={index} {...bet} />
+                        {potentialWinnings.map((bet, index) => (
+                            <BetCard
+                                key={index}
+                                marketId={bet.marketId}
+                                amount={bet.amount}
+                                outcome={bet.outcome}
+                                status={bet.status}
+                                potentialWinnings={bet.potentialWinnings}
+                            />
                         ))}
                     </div>
                 )}
