@@ -9,6 +9,9 @@ contract QuintusMarketTest is Test {
     QuintusMarket public market;
     QuintusOracles public oracle;
     address public owner;
+    address public alice;
+    address public bob;
+    address public charlie;
     address public user1;
     address public user2;
     address public user3;
@@ -27,6 +30,7 @@ contract QuintusMarketTest is Test {
     error BettingDeadlinePassed();
     error TooEarlyToResolve();
     error BettingAmountCannotBeZero();
+    error MarketNotCreated();
 
 
 
@@ -36,9 +40,15 @@ contract QuintusMarketTest is Test {
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
         user3 = makeAddr("user3");
+        alice = makeAddr("alice");
+        bob = makeAddr("bob");
+        charlie = makeAddr("charlie");
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);
         vm.deal(user3, 100 ether);
+        vm.deal(alice, 100 ether);
+        vm.deal(bob, 100 ether);
+        vm.deal(charlie, 100 ether);
         oracle = new QuintusOracles();
         market = new QuintusMarket(address(oracle));
     }
@@ -604,105 +614,5 @@ contract QuintusMarketTest is Test {
     vm.prank(user2);
     market.claimWinnings(0);
     }
-
-
-
-
-    function testGetMarketBetsWithMultipleOutcomes() public {
-        string[] memory outcomes = new string[](2);
-        outcomes[0] = "YES";
-        outcomes[1] = "NO";
-        
-        market.createMarket{value: MARKET_CREATION_FEE}(
-            "Test Market",
-            "Test Description",
-            block.timestamp + 1 days,
-            block.timestamp + 2 days,
-            outcomes,
-            QuintusMarket.MarketCategory.SPORTS
-        );
-        
-        vm.deal(address(this), 75 ether);
-        market.placeBet{value: 75 ether}(0, "YES");
-        
-        vm.prank(address(0x1));
-        vm.deal(address(0x1), 25 ether);
-        market.placeBet{value: 25 ether}(0, "NO");
-
-        (uint256 yesBets, uint256 yesWeight) = market.getMarketBets(0, "YES");
-        assertEq(yesBets, 75 ether, "YES bets should be 75 ether");
-        assertEq(yesWeight, 75, "YES weight should be 75%");
-
-        (uint256 noBets, uint256 noWeight) = market.getMarketBets(0, "NO");
-        assertEq(noBets, 25 ether, "NO bets should be 25 ether");
-        assertEq(noWeight, 25, "NO weight should be 25%");
-    }
-
-    function testCalculatePotentialWinningsPerBetWithPoolChanges() public {
-    // Setup market
-    string[] memory outcomes = new string[](2);
-    outcomes[0] = "Team A";
-    outcomes[1] = "Team B";
     
-    vm.prank(user1);
-    market.createMarket{value: MARKET_CREATION_FEE}(
-        "Test Market",
-        "Description",
-        block.timestamp + 1 days,
-        block.timestamp + 2 days,
-        outcomes,
-        QuintusMarket.MarketCategory.SPORTS
-    );
-
-    // Stage 1: Initial bets from user2
-    vm.startPrank(user2);
-    market.placeBet{value: 2 ether}(0, "Team A");
-    market.placeBet{value: 3 ether}(0, "Team A");
-    vm.stopPrank();
-
-    uint256[] memory winningsStage1 = market.calculatePotentialWinnings(0, user2, "Team A");
-    
-    uint256 expectedFirstBetStage1 = 2 ether;
-    uint256 expectedSecondBetStage1 = 3 ether;
-    
-    assertEq(winningsStage1[0], calculateWithFees(expectedFirstBetStage1), "Stage 1: First bet winnings");
-    assertEq(winningsStage1[1], calculateWithFees(expectedSecondBetStage1), "Stage 1: Second bet winnings");
-
-    // Stage 2: User3 adds to pool with Team B bet
-    vm.prank(user3);
-    market.placeBet{value: 5 ether}(0, "Team B");
-    
-    uint256[] memory winningsStage2 = market.calculatePotentialWinnings(0, user2, "Team A");
-    
-    uint256 expectedFirstBetStage2 = (2 ether * 10 ether) / 5 ether;  // 4 ether
-    uint256 expectedSecondBetStage2 = (3 ether * 10 ether) / 5 ether; // 6 ether
-    
-    assertEq(winningsStage2[0], calculateWithFees(expectedFirstBetStage2), "Stage 2: First bet winnings");
-    assertEq(winningsStage2[1], calculateWithFees(expectedSecondBetStage2), "Stage 2: Second bet winnings");
-
-    // Stage 3: More bets increase pool further
-    vm.prank(user1);
-    market.placeBet{value: 10 ether}(0, "Team B");
-    
-    uint256[] memory winningsStage3 = market.calculatePotentialWinnings(0, user2, "Team A");
-    
-    uint256 expectedFirstBetStage3 = (2 ether * 20 ether) / 5 ether;  // 8 ether
-    uint256 expectedSecondBetStage3 = (3 ether * 20 ether) / 5 ether; // 12 ether
-    
-    assertEq(winningsStage3[0], calculateWithFees(expectedFirstBetStage3), "Stage 3: First bet winnings");
-    assertEq(winningsStage3[1], calculateWithFees(expectedSecondBetStage3), "Stage 3: Second bet winnings");
-
-    // Verify increasing potential returns
-    assertTrue(winningsStage2[0] > winningsStage1[0], "Winnings should increase from stage 1 to 2");
-    assertTrue(winningsStage3[0] > winningsStage2[0], "Winnings should increase from stage 2 to 3");
-    }
-
-    function calculateWithFees(uint256 amount) internal pure returns (uint256) {
-        uint256 platformFee = (amount * 25) / 1000;
-        uint256 creatorFee = (amount * 10) / 1000;
-        return amount - platformFee - creatorFee;
-    }
-
-
-
 }

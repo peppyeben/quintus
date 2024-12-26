@@ -230,41 +230,35 @@ contract QuintusMarket is Ownable, ReentrancyGuard {
         emit WinningsClaimed(_marketId, msg.sender, finalWinnings);
     }
 
-    /// @notice Calculates potential winnings for a bettor's pending bets in a market
-    function calculatePotentialWinnings(
-    uint256 _marketId,
-    address _bettor,
-    string memory _outcome
-) public view returns (uint256[] memory betWinnings) {
-    Market storage market = markets[_marketId];
-    if (!market.marketCreated) revert MarketNotCreated();
-
-    Bet[] storage userBetArray = userBets[_marketId][_bettor];
-    uint256 len = userBetArray.length;
-    
-    // Initialize array to store winnings for each bet
-    betWinnings = new uint256[](len);
-    
-    // Calculate potential winnings for each pending bet with matching outcome
-    uint256 totalBetsForOutcome = market.totalBets[_outcome];
-    if (totalBetsForOutcome > 0) {
-        for (uint256 i; i < len;) {
-            Bet storage bet = userBetArray[i];
-            if (bet.status == BetStatus.Pending && 
-                keccak256(abi.encodePacked(bet.outcome)) == keccak256(abi.encodePacked(_outcome))) {
-                uint256 rawWinnings = (bet.amount * market.totalPool) / totalBetsForOutcome;
-                // Apply fees
-                uint256 platformFee = (rawWinnings * PLATFORM_FEE) / 1000;
-                uint256 creatorFee = (rawWinnings * CREATOR_FEE) / 1000;
-                betWinnings[i] = rawWinnings - platformFee - creatorFee;
-            }
-            unchecked { ++i; }
+    /// @notice Calculates potential winnings for a specific bet
+    /// @param _bet The bet structure containing bet details
+    /// @return winnings The potential winnings for the bet
+    function calculateBetWinnings(
+        Bet memory _bet
+    ) public view returns (uint256 winnings) {
+        Market storage market = markets[_bet.marketId];
+        if (!market.marketCreated) revert MarketNotCreated();
+        
+        // Only calculate for pending bets
+        if (_bet.status != BetStatus.Pending) {
+            return 0;
         }
+        
+        uint256 totalBetsForOutcome = market.totalBets[_bet.outcome];
+        if (totalBetsForOutcome > 0) {
+            // Calculate raw winnings based on bet amount and total pool
+            uint256 rawWinnings = (_bet.amount * market.totalPool) / totalBetsForOutcome;
+            
+            // Apply platform and creator fees
+            uint256 platformFee = (rawWinnings * PLATFORM_FEE) / 1000;
+            uint256 creatorFee = (rawWinnings * CREATOR_FEE) / 1000;
+            
+            // Calculate final winnings after fees
+            winnings = rawWinnings - platformFee - creatorFee;
+        }
+        
+        return winnings;
     }
-    
-    return betWinnings;
-    }
-
 
 
     /// @notice Resolves a bet with the winning outcome from the oracle
