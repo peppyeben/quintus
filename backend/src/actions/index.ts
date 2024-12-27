@@ -71,24 +71,24 @@ async function main(
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function processQueries() {
-    let queryRes = [];
-    for (let i = 0; i < predictionQueries.length; i++) {
-        const query = predictionQueries[i];
-        const preMatchQuery = query.query;
-        const preMatchOutcomes = query.outcomes;
+// async function processQueries() {
+//     let queryRes = [];
+//     for (let i = 0; i < predictionQueries.length; i++) {
+//         const query = predictionQueries[i];
+//         const preMatchQuery = query.query;
+//         const preMatchOutcomes = query.outcomes;
 
-        await delay(3000);
-        const res = await main(preMatchQuery, preMatchOutcomes);
-        queryRes.push({
-            query: preMatchQuery,
-            result: res,
-        });
-    }
+//         await delay(3000);
+//         const res = await main(preMatchQuery, preMatchOutcomes);
+//         queryRes.push({
+//             query: preMatchQuery,
+//             result: res,
+//         });
+//     }
 
-    console.log(queryRes);
-}
+//     console.log(queryRes);
+// }
 
-processQueries();
+// processQueries();
 
 export { main as processQueriesAndOutcomes };
