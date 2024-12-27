@@ -10,23 +10,11 @@
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.33.1",
-        "@huggingface/inference": "^2.8.1",
         "@types/axios": "^0.14.4",
-        "@types/cheerio": "^0.22.35",
-        "@types/jsdom": "^21.1.7",
-        "@types/puppeteer": "^7.0.4",
-        "apify-client": "^2.11.0",
-        "article-parser": "^7.2.6-rc1",
         "axios": "^1.7.9",
         "cheerio": "^1.0.0",
         "dotenv": "^16.4.7",
         "ethers": "^6.13.4",
-        "googleapis": "^144.0.0",
-        "jsdom": "^25.0.1",
-        "openai": "^4.76.2",
-        "playwright": "^1.49.1",
-        "puppeteer-extra": "^3.3.6",
-        "puppeteer-extra-plugin-stealth": "^2.11.2",
         "winston": "^3.17.0"
     },
     "devDependencies": {
