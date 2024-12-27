@@ -1,4 +1,7 @@
-export const BET_ABI = [
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.QUINTUS_ORACLES_ABI = exports.BET_ABI = void 0;
+exports.BET_ABI = [
     {
         type: "constructor",
         inputs: [
@@ -627,9 +630,8 @@ export const BET_ABI = [
     { type: "error", name: "TooEarlyToResolve", inputs: [] },
     { type: "error", name: "TransferFailed", inputs: [] },
     { type: "error", name: "UnauthorizedOracle", inputs: [] },
-] as const;
-
-export const QUINTUS_ORACLES_ABI = [
+];
+exports.QUINTUS_ORACLES_ABI = [
     {
         type: "constructor",
         inputs: [],
@@ -781,4 +783,4 @@ export const QUINTUS_ORACLES_ABI = [
     { type: "error", name: "BettingContractNotSet", inputs: [] },
     { type: "error", name: "NotAuthorized", inputs: [] },
     { type: "error", name: "ZeroAddress", inputs: [] },
-] as const;
+];

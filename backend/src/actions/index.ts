@@ -90,3 +90,5 @@ async function processQueries() {
 }
 
 processQueries();
+
+export { main as processQueriesAndOutcomes };

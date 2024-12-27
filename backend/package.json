@@ -3,7 +3,10 @@
     "version": "1.0.0",
     "license": "MIT",
     "scripts": {
-        "start": "yarn ts-node ./src/listener.ts"
+        "start": "cross-env NODE_ENV=production ts-node ./src/listener.ts",
+        "start:dev": "cross-env NODE_ENV=development ts-node ./src/listener.ts",
+        "build": "tsc",
+        "prod": "cross-env NODE_ENV=production node ./dist/listener.js"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.33.1",
@@ -23,10 +26,12 @@
         "openai": "^4.76.2",
         "playwright": "^1.49.1",
         "puppeteer-extra": "^3.3.6",
-        "puppeteer-extra-plugin-stealth": "^2.11.2"
+        "puppeteer-extra-plugin-stealth": "^2.11.2",
+        "winston": "^3.17.0"
     },
     "devDependencies": {
         "@types/node": "^22.10.2",
+        "cross-env": "^7.0.3",
         "ts-node": "^10.9.2",
         "typescript": "^5.7.2"
     }
