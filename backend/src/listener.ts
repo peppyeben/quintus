@@ -3,6 +3,7 @@ import { BET_ABI, QUINTUS_ORACLES_ABI } from "./utils/abi";
 import dotenv from "dotenv";
 import { processQueriesAndOutcomes } from "./actions";
 import logger from "./logger";
+import { ResolutionResult } from "./modules/sports/market-resolver";
 
 dotenv.config();
 
@@ -12,6 +13,10 @@ async function startApp() {
             process.env.BSC_RPC_URL as string
         );
 
+        // Create a wallet with the private key from environment variables
+        const privateKey = process.env.BACKEND_PRIVATE_KEY as string;
+        const wallet = new ethers.Wallet(privateKey, provider);
+
         const contractAddress = process.env.QUINTUS_MARKET as string;
 
         const quintusMarketContract = new ethers.Contract(
@@ -20,10 +25,11 @@ async function startApp() {
             provider
         );
 
+        // Use the wallet to create a contract instance that can send transactions
         const quintusOracleContract = new ethers.Contract(
             contractAddress,
             QUINTUS_ORACLES_ABI,
-            provider
+            wallet
         );
 
         logger.info(
@@ -53,21 +59,25 @@ async function startApp() {
 
                     console.log("Market Info:", marketInfo);
 
-                    const processedResult = await processQueriesAndOutcomes(
+                    const processedResult = (await processQueriesAndOutcomes(
                         betTitle,
                         outcomes,
-                        marketInfo[2].toNumber(),
-                        marketInfo[3].toNumber()
-                    );
+                        Number(marketInfo[2]),
+                        Number(marketInfo[3])
+                    )) as ResolutionResult;
 
                     logger.info("Processed result:", processedResult);
+                    console.log("Processed result:", processedResult);
 
-                    const oracleRes = await quintusOracleContract.resolveBet([
+                    // Now this will work because we're using a wallet that can send transactions
+                    const tx = await quintusOracleContract.resolveBet(
                         _marketId,
-                        processedResult,
-                    ]);
+                        processedResult.outcome
+                    );
 
-                    logger.info("Oracle response:", oracleRes);
+                    // Wait for the transaction to be mined
+                    const receipt = await tx.wait();
+                    logger.info("Oracle response transaction:", receipt);
                 } catch (error) {
                     logger.error(
                         "Error processing queries and outcomes:",

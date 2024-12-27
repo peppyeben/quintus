@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { QueryParseResult } from "./parse-market-data";
 import { MatchDetails } from "./find-sportsdb-result";
 
-interface ResolutionResult {
+export interface ResolutionResult {
     outcome: string;
     reasoning: string;
 }
