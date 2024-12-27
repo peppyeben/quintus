@@ -9,6 +9,8 @@ dotenv.config();
 async function main(
     preMatchQuery: string,
     preMatchOutcomes: string[],
+    betDeadline: number,
+    resolutionTime: number,
     preMatchDescription: string = ""
 ) {
     const myQueryParser = new QueryParser(
@@ -42,8 +44,8 @@ async function main(
         .findMatch(
             searchParams.homeTeam,
             searchParams.awayTeam,
-            1734798513,
-            1734798686
+            betDeadline,
+            resolutionTime
         )
         .catch((error) => {
             console.log("Error finding match:", error);

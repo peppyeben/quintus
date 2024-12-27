@@ -48,9 +48,16 @@ async function startApp() {
                     `Processing queries and outcomes for market ${betTitle}`
                 );
                 try {
+                    const marketInfo =
+                        await quintusMarketContract.getMarketInfo(_marketId);
+
+                    console.log("Market Info:", marketInfo);
+
                     const processedResult = await processQueriesAndOutcomes(
                         betTitle,
-                        outcomes
+                        outcomes,
+                        marketInfo[2].toNumber(),
+                        marketInfo[3].toNumber()
                     );
 
                     logger.info("Processed result:", processedResult);
