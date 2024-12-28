@@ -1,11 +1,5 @@
 "use client";
-import {
-    Address,
-    Avatar,
-    EthBalance,
-    Identity,
-    Name,
-} from "@coinbase/onchainkit/identity";
+import { Address, Avatar, Identity, Name } from "@coinbase/onchainkit/identity";
 import {
     ConnectWallet,
     Wallet,
@@ -46,7 +40,6 @@ export function WalletWrapper({
                     >
                         <Avatar />
                         <Address />
-                        <EthBalance />
                     </Identity>
                     <WalletDropdownDisconnect />
                 </WalletDropdown>
