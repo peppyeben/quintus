@@ -6,7 +6,7 @@
         "start": "cross-env NODE_ENV=production ts-node ./src/listener.ts",
         "start:dev": "cross-env NODE_ENV=development ts-node ./src/listener.ts",
         "build": "tsc",
-        "prod": "yarn pm2 start src/listener.ts --name my-ts-app --interpreter ts-node --env NODE_ENV=production"
+        "prod": "yarn pm2 start src/listener.ts --name quintus-backend --interpreter ts-node --env NODE_ENV=production"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.33.1",
