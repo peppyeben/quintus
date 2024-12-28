@@ -17,7 +17,7 @@ export interface Bet {
     status: BetStatus; // Status of the bet (Pending/Won/Lost)
 }
 
-export const useUserBets = () => {
+export const useUserBets = (specificMarketId?: bigint) => {
     const [userBets, setUserBets] = useState<Bet[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -100,8 +100,8 @@ export const useUserBets = () => {
                 });
 
                 index++;
-            } catch (error) {
-                console.error(error);
+            } catch {
+                // console.error(error);
                 // If an error occurs, assume no more bets
                 break;
             }
@@ -110,19 +110,40 @@ export const useUserBets = () => {
         return userBetsForMarket;
     };
 
+    const fetchUserBetsForSpecificMarket = useCallback(async () => {
+        if (
+            !isConnected ||
+            !address ||
+            !publicClient ||
+            specificMarketId === undefined
+        ) {
+            return [];
+        }
+
+        return fetchUserBetsForMarket(specificMarketId);
+    }, [isConnected, address, publicClient, specificMarketId]);
+
     // Initial fetch on hook mount
     useEffect(() => {
         fetchUserBets();
+        fetchUserBetsForSpecificMarket();
     }, [fetchUserBets]);
 
     const refetchUserBets = useCallback(async () => {
         return fetchUserBets();
     }, [fetchUserBets]);
 
+    const refetchUserBetsForSpecificMarket = useCallback(async () => {
+        return fetchUserBetsForSpecificMarket();
+    }, [fetchUserBetsForSpecificMarket]);
+
     return {
         userBets,
         isLoading,
         error,
         refetchUserBets,
+        fetchUserBetsForMarket,
+        fetchUserBetsForSpecificMarket,
+        refetchUserBetsForSpecificMarket,
     };
 };

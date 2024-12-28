@@ -14,8 +14,12 @@ import { MarketOutcomeItem } from "@/components/MarketOutcome";
 import { useClaimWinnings } from "@/hooks/useClaimWinnings";
 import { useResolveMarket } from "@/hooks/useResolveMarket";
 import ShareButton from "@/components/ShareButton";
+import { useMarketClaimStatus } from "@/hooks/useMarketInfo";
+import { useAccount } from "wagmi";
+import { useUserBets } from "@/hooks/useUserBets";
 
 export const MarketDetailsPage: React.FC = () => {
+    const account = useAccount();
     const { markets, isLoading, error } = useMarkets();
     const { id } = useParams<{ id: string }>();
     const [pageError, setPageError] = useState<string | null>(null);
@@ -24,11 +28,35 @@ export const MarketDetailsPage: React.FC = () => {
     const [isOutcomeOpen, setIsOutcomeOpen] = useState(false);
     const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
     const [betAmount, setBetAmount] = useState<bigint>(0n);
+    const [userHasBetsOnMarket, setUserHasBetsOnMarket] =
+        useState<boolean>(false);
 
     const { placeBet } = usePlaceBet();
     const { claimWinnings } = useClaimWinnings();
     const { resolveMarket } = useResolveMarket();
-    // const marketClaimStatus = useMarketClaimStatus();
+    const { fetchUserBetsForSpecificMarket } = useUserBets(
+        id !== undefined ? BigInt(id) : undefined
+    );
+
+    const marketClaimStatus = useMarketClaimStatus(
+        id !== undefined ? BigInt(id) : undefined,
+        account.address
+    );
+
+    // When accessing the data
+    const hasClaimed = marketClaimStatus.data ?? false;
+
+    useEffect(() => {
+        if (account.isConnected && id !== undefined) {
+            marketClaimStatus.refetch();
+
+            fetchUserBetsForSpecificMarket().then((res) => {
+                if (res && res.length > 0) {
+                    setUserHasBetsOnMarket(true);
+                }
+            });
+        }
+    }, [account, id]);
 
     const { openModal } = useCustomModal();
 
@@ -370,17 +398,32 @@ export const MarketDetailsPage: React.FC = () => {
                             </button>
                         </div>
                     )}
-                <div className="flex w-full">
-                    <button
-                        onClick={handleClaimWinnings}
-                        disabled={!market.resolved}
-                        className="w-full bg-white text-black py-2 rounded-xl 
+                {market.resolved &&
+                    userHasBetsOnMarket &&
+                    (!hasClaimed ? (
+                        <div className="flex w-full">
+                            <button
+                                onClick={handleClaimWinnings}
+                                disabled={!market.resolved}
+                                className="w-full bg-white text-black py-2 rounded-xl 
                            hover:bg-gray-300 transition-colors duration-300 font-bold
                            disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {!market.resolved ? "Claim Winnings" : "Claim Winnings"}
-                    </button>
-                </div>
+                            >
+                                Claim Winnings
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex w-full">
+                            <button
+                                disabled
+                                className="w-full bg-white text-black py-2 rounded-xl 
+                           hover:bg-gray-300 transition-colors duration-300 font-bold
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Winnings Claimed
+                            </button>{" "}
+                        </div>
+                    ))}
             </motion.div>
         </motion.div>
     );

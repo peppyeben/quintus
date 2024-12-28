@@ -35,8 +35,8 @@ export function useMarketInfo(marketId: bigint) {
 }
 
 export function useMarketClaimStatus(
-    marketId: bigint,
-    accountAddress: `0x${string}`
+    marketId: bigint | undefined,
+    accountAddress: `0x${string}` | undefined
 ) {
     return useReadContract({
         address: `0x${String(
@@ -44,10 +44,14 @@ export function useMarketClaimStatus(
         ).substring(2)}`,
         abi: BET_ABI,
         functionName: "hasClaimed",
-        args: [marketId, accountAddress],
+        args:
+            marketId !== undefined && accountAddress
+                ? [marketId, accountAddress]
+                : undefined,
         query: {
+            enabled: !!marketId && !!accountAddress,
             staleTime: 1000 * 60, // 1 minute
-            refetchInterval: 1000 * 60 * 2, // every 2 minutes
+            refetchInterval: 1000 * 60, // every 1 minute
         },
     });
 }

@@ -17,23 +17,25 @@ async function startApp() {
         const privateKey = process.env.BACKEND_PRIVATE_KEY as string;
         const wallet = new ethers.Wallet(privateKey, provider);
 
-        const contractAddress = process.env.QUINTUS_MARKET as string;
+        const quintusMarketContractAddress = process.env
+            .QUINTUS_MARKET as string;
+        const quintusMarketOracleAddress = process.env.QUINTUS_ORACLE as string;
 
         const quintusMarketContract = new ethers.Contract(
-            contractAddress,
+            quintusMarketContractAddress,
             BET_ABI,
             provider
         );
 
         // Use the wallet to create a contract instance that can send transactions
         const quintusOracleContract = new ethers.Contract(
-            contractAddress,
+            quintusMarketOracleAddress,
             QUINTUS_ORACLES_ABI,
             wallet
         );
 
         logger.info(
-            `Listening for events from market contract at: ${contractAddress}`
+            `Listening for events from market contract at: ${quintusMarketContractAddress}`
         );
 
         quintusMarketContract.on(

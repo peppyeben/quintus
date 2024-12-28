@@ -89,10 +89,10 @@ export const usePotentialWinnings = () => {
                 if (amount === 0n) break;
 
                 // Only process pending bets
-                if (status !== BetStatus.Pending) {
-                    index++;
-                    continue;
-                }
+                // if (status !== BetStatus.Pending) {
+                //     index++;
+                //     continue;
+                // }
 
                 // Fetch market info to get total pool
                 const marketInfoResult = await publicClient?.readContract({
@@ -140,7 +140,7 @@ export const usePotentialWinnings = () => {
 
                 index++;
             } catch (error) {
-                console.error(error)
+                console.error(error);
                 // If an error occurs, assume no more bets
                 break;
             }
