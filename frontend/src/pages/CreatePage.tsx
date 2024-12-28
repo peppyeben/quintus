@@ -25,6 +25,7 @@ import "react-time-picker/dist/TimePicker.css";
 import { useCustomModal } from "@/context/CustomModalContext";
 import { handleContractError } from "@/utils/errors";
 import { useCreateMarket } from "@/hooks/useCreateMarket";
+import QuintusMeta from "@/components/QuintusMeta";
 
 // Categories for market
 const CATEGORIES = ["Sports", "Crypto", "Politics", "Election", "Others"];
@@ -180,6 +181,10 @@ export const CreatePage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >
+            <QuintusMeta
+                title={`Create Market | Quintus Markets`}
+                description={`Create a new prediction market on Quintus`}
+            />
             <p className="text-left mr-auto font-bold text-white text-xl">
                 Create New Market
             </p>

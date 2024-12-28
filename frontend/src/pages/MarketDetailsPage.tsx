@@ -17,6 +17,7 @@ import ShareButton from "@/components/ShareButton";
 import { useMarketClaimStatus } from "@/hooks/useMarketInfo";
 import { useAccount } from "wagmi";
 import { useUserBets } from "@/hooks/useUserBets";
+import QuintusMeta from "@/components/QuintusMeta";
 
 export const MarketDetailsPage: React.FC = () => {
     const account = useAccount();
@@ -208,11 +209,15 @@ export const MarketDetailsPage: React.FC = () => {
             className="flex flex-col space-y-5 justify-start items-center py-6 w-full px-2 mx-auto lg:w-1/2 lg:px-0"
         >
             <motion.div className="flex flex-col justify-start space-y-6 py-4 w-full max-w-4xl px-6 bg-[#0d0d0d]">
+                <QuintusMeta
+                    title={`${market.title} | Quintus Markets`}
+                    description={`Bet on ${market.title} - ${market.description}`}
+                />
+
                 <section className="flex w-full justify-between items-center">
                     <p className="bg-white text-black rounded-full py-1 px-3 text-xs">
                         {MARKET_CATEGORY[Number(market.category)] || "Unknown"}
                     </p>
-                    {/* <FaShare className="text-white text-lg ml-auto transition-all duration-300 cursor-pointer hover:text-gray-300 active:text-green-300" /> */}
 
                     <ShareButton />
                 </section>

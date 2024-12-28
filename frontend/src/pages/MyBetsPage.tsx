@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { BetCard } from "../components/BetCard";
 import { usePotentialWinnings } from "@/hooks/usePotentialWinnings";
+import QuintusMeta from "@/components/QuintusMeta";
 
 export const MyBetsPage: React.FC = () => {
     const { potentialWinnings, isLoading, error, refetchPotentialWinnings } =
@@ -9,7 +10,7 @@ export const MyBetsPage: React.FC = () => {
 
     useEffect(() => {
         const fetchPW = async () => {
-            await refetchPotentialWinnings()
+            await refetchPotentialWinnings();
         };
 
         fetchPW();
@@ -35,6 +36,10 @@ export const MyBetsPage: React.FC = () => {
 
     return (
         <motion.div className="flex flex-col space-y-5 justify-start items-center py-6">
+            <QuintusMeta
+                title={`My bets | Quintus Markets`}
+                description={`View all your bets on Quintus.`}
+            />
             <motion.div className="flex flex-col justify-start space-y-4 py-4 w-full px-6">
                 <p className="text-xl font-bold text-white mr-auto pl-6 lg:pl-0">
                     My Bets

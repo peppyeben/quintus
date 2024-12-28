@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { PredictionMarkets } from "../components/PredictionMarkets";
 import { useMarkets } from "@/context/MarketsContext";
 import { MARKET_CATEGORY } from "@/utils/util";
+import QuintusMeta from "@/components/QuintusMeta";
 
 export const MarketsPage = () => {
     const {
@@ -49,7 +50,9 @@ export const MarketsPage = () => {
                     ))}
                 </div>
             ) : (
-                <div className="text-white">No {selectedCategory} Markets Available</div>
+                <div className="text-white">
+                    No {selectedCategory} Markets Available
+                </div>
             );
         }
 
@@ -68,6 +71,10 @@ export const MarketsPage = () => {
 
     return (
         <div className="flex flex-col space-y-5 justify-start items-center py-6">
+            <QuintusMeta
+                title={`View all markets | Quintus Markets`}
+                description={`View all prediction markets on Quintus.`}
+            />
             <div className="flex flex-col justify-start space-y-4 py-4 w-full px-6">
                 <p className="text-xl font-bold text-white mr-auto">
                     Prediction Markets
