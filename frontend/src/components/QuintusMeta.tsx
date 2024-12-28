@@ -48,7 +48,7 @@ const QuintusMeta = ({
         const selector = isProperty
             ? `meta[property="${name}"]`
             : `meta[name="${name}"]`;
-        let meta = document.querySelector(selector);
+        const meta = document.querySelector(selector);
 
         if (meta) {
             meta.setAttribute("content", content);
@@ -59,17 +59,3 @@ const QuintusMeta = ({
 };
 
 export default QuintusMeta;
-
-// Usage example in a specific page:
-// pages/Market.tsx
-// const MarketPage = ({ market }) => {
-//     return (
-//         <>
-//             <QuintusMeta
-//                 title={`${market.name} | Quintus Markets`}
-//                 description={`Trade on ${market.name} - ${market.description}`}
-//             />
-//             {/* Your market page content */}
-//         </>
-//     );
-// };
