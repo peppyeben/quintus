@@ -1,14 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import {
-    FaHome,
-    FaChartBar,
-    FaTimes,
-    FaPlus,
-    FaMedal,
-    FaQuestionCircle,
-    FaInfoCircle,
-} from "react-icons/fa";
+import { FaHome, FaChartBar, FaTimes, FaPlus, FaFile } from "react-icons/fa";
 import { FaTableCells } from "react-icons/fa6";
 
 // Define the type for menu items
@@ -31,11 +23,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         { icon: <FaChartBar />, label: "My Bets", path: "/bets" },
         { icon: <FaPlus />, label: "Create", path: "/create" },
     ];
-    
+
     const menuItems2: MenuItem[] = [
-        { icon: <FaQuestionCircle />, label: "FAQs", path: "/" },
-        { icon: <FaInfoCircle />, label: "Support", path: "/" },
-        { icon: <FaMedal />, label: "Rewards", path: "/" },
+        { icon: <FaFile />, label: "Docs", path: "/docs" },
     ];
 
     return (

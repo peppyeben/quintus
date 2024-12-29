@@ -12,6 +12,7 @@ import { LoaderProvider } from "./context/LoaderContext";
 import { MarketDetailsPage } from "./pages/MarketDetailsPage";
 import { CustomModalProvider } from "./context/CustomModalContext";
 import { MarketsProvider } from "./context/MarketsContext";
+import DocsPage from "./pages/DocsPage";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -49,6 +50,7 @@ function App() {
                                     path="/create"
                                     element={<CreatePage />}
                                 />
+                                <Route path="/docs" element={<DocsPage />} />
                             </Routes>
                         </div>
                     </CustomModalProvider>
